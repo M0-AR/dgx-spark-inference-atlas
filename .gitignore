@@ -1,0 +1,17 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Model weights and large raw data (never committed)
+data/raw/
+models/
+hf-hub/
+
+# Local scratch
+*.log
+/tmp/
+
+# Keep results: they are the evidence.
+!results/**

@@ -1,0 +1,34 @@
+{
+  "captured_at_utc": "2026-10-18T08:52:46.049025+00:00",
+  "platform": {
+    "system": "Linux",
+    "release": "7.0.0-38-generic",
+    "machine": "x86_64",
+    "hostname": "md",
+    "python": "3.12.13 (main, May  8 2026, 18:32:55) [Clang 22.1.3 ]"
+  },
+  "cpu": {
+    "model": "Intel(R) Core(TM) i7-14700F",
+    "logical_cores": "28"
+  },
+  "memory": "total        used        free      shared  buff/cache   available\nMem:     32895594496 18326904832  1129852928  1553518592 15471104000 14568689664\nSwap:     8589930496  1208188928  7381741568",
+  "gpu": "index, name, driver_version, memory.total [MiB], compute_cap, power.limit [W], power.max_limit [W]\n0, NVIDIA GeForce RTX 3090, 580.178.04, 24576 MiB, 8.6, 390.00 W, 480.00 W",
+  "cuda_runtime": "nvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2024 NVIDIA Corporation\nBuilt on Thu_Mar_28_02:18:24_PDT_2024\nCuda compilation tools, release 12.4, V12.4.131\nBuild cuda_12.4.r12.4/compiler.34097967_0",
+  "docker": {
+    "version": "Docker version 29.1.3, build 29.1.3-0ubuntu4.1",
+    "compose": "Docker Compose version 2.40.3+ds1-0ubuntu1"
+  },
+  "disk": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/nvme0n1p2  1.8T  1.3T  430G  76% /",
+  "uv_or_pip": {
+    "pip": "pip 26.1.1 from /home/md/.local/share/uv/python/cpython-3.12.13-linux-x86_64-gnu/lib/python3.12/site-packages/pip (python 3.12)"
+  },
+  "harness_digests_sha256": {
+    "harness/bench/__init__.py": "dedc8df71fda5cd1bac0f0564da0f88afea0ff12b1f37badc8157fcdfc2430fc",
+    "harness/bench/live_data.py": "fa59a1624559f72195f35eb5da1a4d4cdbb630111808dc2fc93acd15aabbfd32",
+    "harness/bench/metrics.py": "eddbffd3db8b651fcca84035f28ac2039d5878e0198232f84af44609b8b2fa3b",
+    "harness/bench/stats.py": "c81940d930d3532f48fd89e0fa82486e001ee589bbfb6b4924c20d818ec2aebc",
+    "harness/bench/toolcall_eval.py": "7a2aafe77b66e7d170fb4267b08f5e3a6a16f6d0b5bd56855e0f7db5a5cf7463",
+    "harness/tests/test_stats.py": "c245666b6eaa38360929ce4418cebe9b526d94086d78e6c0464d19cae819b901",
+    "harness/tests/test_toolcall_eval.py": "4f926280f8a446b04dcee3cb07e2988d60e791adaaa40bea1fcef5d8dc9a2d52"
+  }
+}

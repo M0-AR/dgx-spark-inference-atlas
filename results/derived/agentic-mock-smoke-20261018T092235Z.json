@@ -1,0 +1,185 @@
+{
+  "meta": {
+    "tag": "mock-smoke",
+    "run_id": "mock-smoke-20261018T092235Z",
+    "model": "mock",
+    "endpoint": "http://127.0.0.1:8791/v1",
+    "episodes": 3,
+    "seed_base": 0,
+    "max_turns": 6,
+    "snapshot_before": {
+      "fetched_start_utc": "2026-10-18T09:22:35.881+00:00",
+      "fetched_end_utc": "2026-10-18T09:22:47.975+00:00",
+      "btc_usd": 81800.8,
+      "eur_usd": 1.1253,
+      "btc_eur": 72692.43757220298,
+      "btc_usd_source": {
+        "url": "https://api.kraken.com/0/public/Ticker?pair=XBTUSD",
+        "fetched_at_utc": "2026-10-18T09:22:43.405+00:00",
+        "http_status": 200,
+        "elapsed_ms": 7523.24,
+        "sha256": "0681a623a085a568949c662f6794dbb77ab3cc016e3397382c48c942decdb4a7",
+        "bytes": 307,
+        "attempt": 1,
+        "pair": "XXBTZUSD",
+        "field": "c[0] (last trade price)",
+        "bid_ask": {
+          "bid": 81800.7,
+          "ask": 81800.8
+        }
+      },
+      "eur_usd_source": {
+        "url": "https://api.frankfurter.dev/v1/latest?base=EUR&symbols=USD",
+        "fetched_at_utc": "2026-10-18T09:22:47.975+00:00",
+        "http_status": 200,
+        "elapsed_ms": 4570.48,
+        "sha256": "e2611a1a21dff3d8c5170ca71c4feedf80b5908b89aac855c35794b508a1c34a",
+        "bytes": 70,
+        "attempt": 1,
+        "date": "2026-10-16",
+        "field": "rates.USD (ECB reference)"
+      },
+      "notes": [
+        "btc_eur = btc_usd / eur_usd, computed by harness"
+      ]
+    },
+    "snapshot_after": {
+      "fetched_start_utc": "2026-10-18T09:22:58.813+00:00",
+      "fetched_end_utc": "2026-10-18T09:23:01.679+00:00",
+      "btc_usd": 81800.7,
+      "eur_usd": 1.1253,
+      "btc_eur": 72692.34870701146,
+      "btc_usd_source": {
+        "url": "https://api.kraken.com/0/public/Ticker?pair=XBTUSD",
+        "fetched_at_utc": "2026-10-18T09:23:00.390+00:00",
+        "http_status": 200,
+        "elapsed_ms": 1576.92,
+        "sha256": "3fdefc1bfb2ae4ca3da2105356f494128a7d9054390534235590f85743ffddd2",
+        "bytes": 307,
+        "attempt": 1,
+        "pair": "XXBTZUSD",
+        "field": "c[0] (last trade price)",
+        "bid_ask": {
+          "bid": 81800.7,
+          "ask": 81800.8
+        }
+      },
+      "eur_usd_source": {
+        "url": "https://api.frankfurter.dev/v1/latest?base=EUR&symbols=USD",
+        "fetched_at_utc": "2026-10-18T09:23:01.679+00:00",
+        "http_status": 200,
+        "elapsed_ms": 1288.78,
+        "sha256": "e2611a1a21dff3d8c5170ca71c4feedf80b5908b89aac855c35794b508a1c34a",
+        "bytes": 70,
+        "attempt": 1,
+        "date": "2026-10-16",
+        "field": "rates.USD (ECB reference)"
+      },
+      "notes": [
+        "btc_eur = btc_usd / eur_usd, computed by harness"
+      ]
+    },
+    "generated_by": "scripts/run_toolcall.py"
+  },
+  "episodes": [
+    {
+      "index": 0,
+      "grade": {
+        "C_tool": true,
+        "C_task": true,
+        "C_outcome": true,
+        "n_tool_calls": 2,
+        "valid_tool_calls": 2,
+        "hallucinated_tool_calls": 0,
+        "parse_ok_no_repair": true,
+        "needed_repair": false,
+        "schema_ok": true,
+        "value_within_tolerance": {
+          "btc_usd": true,
+          "eur_usd": true,
+          "btc_eur": true
+        },
+        "served_truth": {
+          "btc_usd": 81800.8,
+          "eur_usd": 1.1253,
+          "btc_eur": 72692.43757220298
+        },
+        "final_content": "{\"btc_usd\": 81800.8, \"eur_usd\": 1.1253, \"btc_eur\": 72692.44}",
+        "turns": 3,
+        "api_errors": []
+      }
+    },
+    {
+      "index": 1,
+      "grade": {
+        "C_tool": true,
+        "C_task": true,
+        "C_outcome": true,
+        "n_tool_calls": 2,
+        "valid_tool_calls": 2,
+        "hallucinated_tool_calls": 0,
+        "parse_ok_no_repair": true,
+        "needed_repair": false,
+        "schema_ok": true,
+        "value_within_tolerance": {
+          "btc_usd": true,
+          "eur_usd": true,
+          "btc_eur": true
+        },
+        "served_truth": {
+          "btc_usd": 81800.7,
+          "eur_usd": 1.1253,
+          "btc_eur": 72692.34870701146
+        },
+        "final_content": "{\"btc_usd\": 81800.7, \"eur_usd\": 1.1253, \"btc_eur\": 72692.35}",
+        "turns": 3,
+        "api_errors": []
+      }
+    },
+    {
+      "index": 2,
+      "grade": {
+        "C_tool": true,
+        "C_task": true,
+        "C_outcome": true,
+        "n_tool_calls": 2,
+        "valid_tool_calls": 2,
+        "hallucinated_tool_calls": 0,
+        "parse_ok_no_repair": true,
+        "needed_repair": false,
+        "schema_ok": true,
+        "value_within_tolerance": {
+          "btc_usd": true,
+          "eur_usd": true,
+          "btc_eur": true
+        },
+        "served_truth": {
+          "btc_usd": 81800.7,
+          "eur_usd": 1.1253,
+          "btc_eur": 72692.34870701146
+        },
+        "final_content": "{\"btc_usd\": 81800.7, \"eur_usd\": 1.1253, \"btc_eur\": 72692.35}",
+        "turns": 3,
+        "api_errors": []
+      }
+    }
+  ],
+  "aggregate": {
+    "n": 3,
+    "C_tool_rate": 1.0,
+    "C_task_rate": 1.0,
+    "C_outcome_rate": 1.0,
+    "C_outcome_ci95": [
+      "point",
+      "lo",
+      "hi",
+      "alpha",
+      "n_boot",
+      "n"
+    ],
+    "repair_rate": 0.0,
+    "hallucinated_total": 0,
+    "api_errors_total": 0,
+    "mde_mcnemar": 2.2874847523660784
+  }
+}

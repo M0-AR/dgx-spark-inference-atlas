@@ -1,0 +1,34 @@
+{
+  "study": "dgx-spark-inference-atlas",
+  "pre_registered": "2026-10-18",
+  "reference_condition": "fp16",
+  "local_arm": {
+    "hardware": "RTX 3090 24GB (sm_86)",
+    "model": "Qwen/Qwen2.5-1.5B-Instruct",
+    "note": "pinned revision recorded in env artifacts at run time"
+  },
+  "conditions": [
+    {"tag": "fp16", "stack": "exllamav3", "bpw": 16.0, "calibration": null},
+    {"tag": "e40",  "stack": "exllamav3", "bpw": 4.0,  "calibration": "default"},
+    {"tag": "e30",  "stack": "exllamav3", "bpw": 3.0,  "calibration": "default"},
+    {"tag": "e20",  "stack": "exllamav3", "bpw": 2.0,  "calibration": "default"},
+    {"tag": "e30-w", "stack": "exllamav3", "bpw": 3.0, "calibration": "wikitext"},
+    {"tag": "e30-a", "stack": "exllamav3", "bpw": 3.0, "calibration": "agentic"}
+  ],
+  "protocol": {
+    "warmup": ">=100 requests or >=10000 output tokens, drained",
+    "repetitions": 5,
+    "requests_per_rep": 8,
+    "max_tokens": 256,
+    "prompt_words": 64,
+    "concurrency": [1, 4],
+    "isolation_cv_gate": 0.10,
+    "episodes_per_condition_min": 30,
+    "c_outcome_margin_pp": 5.0
+  },
+  "tolerances": {
+    "btc_usd": 0.01,
+    "btc_eur": 0.01,
+    "eur_usd": 0.001
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "fetched_start_utc": "2026-10-18T08:55:27.613+00:00",
+  "fetched_end_utc": "2026-10-18T08:55:30.545+00:00",
+  "btc_usd": 81639.5,
+  "eur_usd": 1.1253,
+  "btc_eur": 72549.09801830623,
+  "btc_usd_source": {
+    "url": "https://api.kraken.com/0/public/Ticker?pair=XBTUSD",
+    "fetched_at_utc": "2026-10-18T08:55:29.250+00:00",
+    "http_status": 200,
+    "elapsed_ms": 1637.01,
+    "sha256": "96b10b6277f3323cff3ac695f56b2c5642417e5cc9327495d53aa8eec6a253d1",
+    "bytes": 307,
+    "attempt": 1,
+    "pair": "XXBTZUSD",
+    "field": "c[0] (last trade price)",
+    "bid_ask": {
+      "bid": 81639.4,
+      "ask": 81639.5
+    }
+  },
+  "eur_usd_source": {
+    "url": "https://api.frankfurter.dev/v1/latest?base=EUR&symbols=USD",
+    "fetched_at_utc": "2026-10-18T08:55:30.545+00:00",
+    "http_status": 200,
+    "elapsed_ms": 1294.57,
+    "sha256": "e2611a1a21dff3d8c5170ca71c4feedf80b5908b89aac855c35794b508a1c34a",
+    "bytes": 70,
+    "attempt": 1,
+    "date": "2026-10-16",
+    "field": "rates.USD (ECB reference)"
+  },
+  "notes": [
+    "btc_eur = btc_usd / eur_usd, computed by harness"
+  ]
+}

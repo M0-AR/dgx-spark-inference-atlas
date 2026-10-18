@@ -1,0 +1,8 @@
+.venv/
+data/raw/
+models/
+hf-hub/
+**/__pycache__/
+.pytest_cache/
+results/
+!results/.gitkeep

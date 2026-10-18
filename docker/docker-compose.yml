@@ -1,0 +1,96 @@
+# DGX Spark Inference Atlas — compose stack
+#
+#   smoke   CPU-only: builds the harness image, runs tests + env capture.
+#           This is the reproducibility floor and works on any machine:
+#             docker compose -f docker/docker-compose.yml run --rm smoke
+#
+#   vllm / tensorfold / sglang  GPU serving profiles (dgx or local-gpu):
+#           started with an explicit model directory and a pinned image.
+#           Examples (see docs/SPARK_KIT.md for the full protocol):
+#             MODEL_DIR=/models/glm-5.3-flash-exl3 \
+#               docker compose -f docker/docker-compose.yml --profile dgx up vllm
+#
+#   runner  executes the harness protocol against a served endpoint:
+#             ENDPOINT=http://host.docker.internal:8080/v1 MODEL=... TAG=... \
+#               docker compose -f docker/docker-compose.yml run --rm runner
+#
+name: dgx-spark-inference-atlas
+
+services:
+  smoke:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ../results:/atlas/results
+    environment:
+      ATLAS_TAG: smoke
+
+  runner:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    entrypoint: ["python", "-m", "harness.bench.runner"]
+    command: >-
+      --endpoint ${ENDPOINT:-http://host.docker.internal:8080/v1}
+      --model ${MODEL:-MODEL}
+      --tag ${TAG:-unlabeled}
+      --requests ${REQUESTS:-8} --reps ${REPS:-5}
+      --concurrency ${CONCURRENCY:-1,4} --max-tokens ${MAX_TOKENS:-256}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../results:/atlas/results
+    profiles: ["dgx", "local-gpu"]
+
+  vllm:
+    # Pin the digest you actually ran; the default tag is a placeholder
+    # tracked as an external claim in docs/RELATED_WORK.md §5.
+    image: ${VLLM_IMAGE:-vllm/vllm-openai:latest}
+    command: >-
+      sh -lc 'test -n "$$MODEL_DIR" || { echo "set MODEL_DIR (see docs/SPARK_KIT.md §2)"; exit 2; };
+      exec vllm serve /models --port 8080 --max-model-len "$${MAX_MODEL_LEN:-32768}"'
+    ports: ["8080:8080"]
+    environment:
+      MODEL_DIR: ${MODEL_DIR:-}
+      MAX_MODEL_LEN: ${MAX_MODEL_LEN:-32768}
+    volumes:
+      - ${MODEL_DIR:-./data/raw/no-model}:/models:ro
+    deploy:
+      resources:
+        reservations:
+          devices: [{driver: nvidia, count: all, capabilities: [gpu]}]
+    profiles: ["dgx", "local-gpu"]
+
+  tensorfold:
+    # No public image is pinned by this repo; pass the image you were given.
+    image: ${TF_IMAGE:-tensorfold:please-set-TF_IMAGE}
+    command: >-
+      sh -lc 'command -v tensorfold >/dev/null || { echo "TF_IMAGE did not provide a tensorfold binary; see docs/SPARK_KIT.md §1"; exit 2; };
+      exec tensorfold serve --model /models --host 0.0.0.0 --port 8080 $${TF_EXTRA_ARGS:-}'
+    ports: ["8081:8080"]
+    environment:
+      TF_EXTRA_ARGS: ${TF_EXTRA_ARGS:-}
+    volumes:
+      - ${MODEL_DIR:-./data/raw/no-model}:/models:ro
+    deploy:
+      resources:
+        reservations:
+          devices: [{driver: nvidia, count: all, capabilities: [gpu]}]
+    profiles: ["dgx"]
+
+  sglang:
+    image: ${SGLANG_IMAGE:-lmsysorg/sglang:latest}
+    command: >-
+      sh -lc 'test -n "$$MODEL_DIR" || { echo "set MODEL_DIR (see docs/SPARK_KIT.md §3)"; exit 2; };
+      exec python -m sglang.launch_server --model-path /models --port 8080 --host 0.0.0.0'
+    ports: ["8082:8080"]
+    environment:
+      MODEL_DIR: ${MODEL_DIR:-}
+    volumes:
+      - ${MODEL_DIR:-./data/raw/no-model}:/models:ro
+    deploy:
+      resources:
+        reservations:
+          devices: [{driver: nvidia, count: all, capabilities: [gpu]}]
+    profiles: ["dgx"]

@@ -1,0 +1,22 @@
+{
+  "generated_at_utc": "2026-10-18T09:42:29.739143+00:00",
+  "reference_condition": "fp16",
+  "conditions_in_tables": [],
+  "inputs": [
+    "results/raw/env-20261018T085246Z.json",
+    "results/raw/env-20261018T091055Z.json",
+    "results/raw/env-20261018T094229Z.json",
+    "results/raw/market-20261018T085530Z.json",
+    "results/raw/market-20261018T085533Z.json",
+    "results/raw/toolcall-mock-smoke-20261018T092235Z.jsonl",
+    "results/raw/toolcall-mock-smoke-20261018T092455Z.jsonl"
+  ],
+  "readme_sha256_before": "e15eac6f8f57dc26740a5613d4e1fb8ba6be57046d6ecb3fbb7435ebac1b1c72",
+  "readme_sha256_after": "027317ce0e2d19440a9649727d05f3e548c257f01794b6b1676bfd444d05c6bd",
+  "tables_sha256": {
+    "agentic.md": "cfc45af999697e3a29cf9d0e2741e8343d074ddeeba73feb21ad1d314ed3e7c1",
+    "changepoints.md": "a4fac72bf15b337afeed125ca73c421fb684601c6de8a4410935505b64d576c1",
+    "provenance.md": "cb52831df8e61e28a59d639c1e870e0d841a537d69f6ab83fa7fbb765c41051a",
+    "timing.md": "c947fad50f7f74e72d71d7bd9b9206071919ba055ef78c69819456e73cc87e11"
+  }
+}

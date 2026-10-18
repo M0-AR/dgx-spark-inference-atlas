@@ -1,0 +1,126 @@
+% The DGX Spark Inference Atlas — paper skeleton.
+% Headline numbers come from results/derived/macros.tex, which is generated
+% EXCLUSIVELY by scripts/sync_readme.py from committed run artifacts. Never
+% hand-edit a number in this file; add a macro upstream instead.
+\documentclass[sigconf, nonacm]{acmart}
+
+\usepackage{booktabs}
+\usepackage{graphicx}
+
+% Generated macros (sync_readme.py). Placeholder keeps the skeleton buildable.
+\IfFileExists{../results/derived/macros.tex}{%
+  \input{../results/derived/macros.tex}%
+}{%
+  \input{macros-placeholder.tex}%
+}
+
+\begin{document}
+
+\title{The DGX Spark Inference Atlas: Quantized Serving of Agentic Workloads
+on GB10-Class Hardware}
+
+\author{The Atlas Contributors}
+\affiliation{\institution{Open measurement study}}
+\email{see repository}
+
+\begin{abstract}
+Aggressive low-bit quantization (2--4 bits per weight) is the enabling
+condition for serving modern mixture-of-experts models on unified-memory
+appliances such as NVIDIA's DGX Spark. Community reports in 2026 disagree
+about both quality retention and decode throughput (TensorFold claims
+1.6--3$\times$ vLLM; patched-vLLM reports claim the opposite), and existing
+benchmarks rarely evaluate \emph{agentic} capability against \emph{live}
+external data. This atlas contributes a pre-registered measurement protocol
+with (i) live-data-grounded tool-calling evaluation, (ii) isolation-controlled
+timing and NVML energy accounting, and (iii) an executable replication kit
+for DGX Spark hardware. On the locally executable arm we measure an EXL3
+bit-width ladder \atlasMcNemarFamily{} comparisons against an unquantized
+reference; headline C\_outcome at 4\,bpw is \atlasCoutE40{} (95\% CI
+\atlasCoutCiLoE40--\atlasCoutCiHiE40) versus \atlasCoutFPXX{} for FP16, with
+\atlasChangepoints{} detected changepoint(s) on the ladder
+($\alpha=0.01$). External Spark claims are catalogued and quarantined
+rather than repeated.
+\end{abstract}
+
+\keywords{quantization, EXL3, DGX Spark, agentic evaluation, reproducibility}
+
+\maketitle
+
+\section{Introduction}
+Deployment of frontier-class open models on single-node appliances has moved
+from curiosity to production line in 2026: EXL3 trellis quants of
+GLM-5.3-Flash and DeepSeek-v4.1-Flash run on one or two DGX Spars at
+13--19\,tok/s decode with speculative drafting. Quality evidence, however,
+remains mostly perplexity- and KL-based, while the advertised workloads are
+agentic. We ask the questions practitioners actually face: does tool-calling
+commitment survive 3\,bpw? Where does it break---in whether-to-call, in
+arguments, or in output format? What does a token cost in joules across the
+ladder? And can the disputed speeds be adjudicated with a protocol that a
+third party can re-run on their own Spark?
+
+\section{Related Work}
+We build on benchmarking-methodology guidance \cite{ietf-bench},
+sequential-isolation measurement \cite{isolation}, deterministic-first
+agentic grading \cite{toolveritas}, McNemar-based degradation detection
+\cite{mcnemar}, quantization margin-shrinkage theory \cite{margins,
+twomode, divergence, calibrationbottleneck}, energy measurement protocol
+\cite{wattcounts}, and the EXL3 \cite{exllamav3} and TensorFold
+\cite{tensorfold} serving stacks. Full ecosystem map, including the 2026
+Spark speed dispute and its sources, is in the repository's
+\texttt{docs/RELATED\_WORK.md}.
+
+\section{Method}
+See \texttt{docs/METHODOLOGY.md} (pre-registered 2026-10-18). Conditions:
+FP16 reference; EXL3 at 4/3/2\,bpw with shared calibration; a
+calibration-corpus ablation at 3\,bpw. Protocol: IETF warm-up; sequential
+isolation; fixed-shape prompts; streaming TTFT; per-condition NVML energy;
+live Kraken/Frankfurter tool execution during evaluation with episode-time
+truth capture; deterministic-first three-cell grading with repair flags.
+Analysis: McNemar exact vs reference, bootstrap CIs, TOST for equivalence,
+permutation changepoints on the bpw axis, Holm--Bonferroni across the
+family.
+
+\section{Results}
+% All numbers below expand from generated macros; empty macros compile as 0.
+Table placeholders follow; the committed markdown tables in
+\texttt{results/derived/tables/} are the canonical rendering.
+
+\begin{table}[h]
+\caption{Tool-calling outcomes on live external data (C\_outcome).}
+\begin{tabular}{lrr}
+\toprule
+Condition & C\_outcome & 95\% CI \\
+\midrule
+FP16 & \atlasCoutFPXX & \atlasCoutCiLoFPXX--\atlasCoutCiHiFPXX \\
+EXL3 4\,bpw & \atlasCoutE40 & \atlasCoutCiLoE40--\atlasCoutCiHiE40 \\
+EXL3 3\,bpw & \atlasCoutE30 & \atlasCoutCiLoE30--\atlasCoutCiHiE30 \\
+EXL3 2\,bpw & \atlasCoutE20 & \atlasCoutCiLoE20--\atlasCoutCiHiE20 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Energy per token by condition is reported in
+\texttt{results/derived/tables/timing.md}; conditions flagged by the
+isolation gate (CV $>0.10$) are marked and excluded from ladder fitting.
+
+\section{Limitations}
+Local-arm model scale is small (1.5B-class); absolute quality numbers do not
+transfer to 355B-class MoE models, the \emph{method} does. N per condition
+bounds detectable degradation (power analysis in METHODOLOGY \S6);
+non-significance is never reported as equivalence without TOST. NVML energy
+is whole-device and protocol-relative. DGX Spark (GB10) numbers from
+community sources are labelled external and excluded from measured tables;
+the Spark Kit (\texttt{docs/SPARK\_KIT.md}) exists to convert them into
+measured ones.
+
+\section{Reproducibility}
+The repository ships a docker-compose reproducibility floor (CPU-only smoke
+path), pinned harness digests in every artifact, and a manifest
+(\texttt{results/derived/readme-sync.json}) binding this paper's macros to
+the exact raw records. See \texttt{papers/ARTIFACT\_APPENDIX.md} following
+PACT-2026-AE conventions.
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+\end{document}

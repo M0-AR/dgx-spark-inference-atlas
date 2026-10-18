@@ -1,0 +1,117 @@
+@misc{ietf-bench,
+  title        = {Benchmarking Methodology for Large Language Model Inference
+                  Systems},
+  author       = {Gaikwad, A.},
+  howpublished = {IETF Internet-Draft draft-gaikwad-llm-benchmarking-methodology},
+  year         = {2026},
+  note         = {Warm-up $\geq$100 requests or $\geq$10k output tokens;
+                  probe-stability verification; drain between conditions}
+}
+
+@misc{isolation,
+  title        = {Sequential Isolation Protocols for Reproducible LLM
+                  Inference Measurement},
+  year         = {2026},
+  eprint       = {2610.09778},
+  archivePrefix = {arXiv},
+  note         = {Timing CV reduced from 15.2\% to 2.2\% with isolation and
+                  five repetitions}
+}
+
+@misc{toolveritas,
+  title        = {Tool-Veritas: Deterministic-First Verification of Agentic
+                  Tool Use},
+  year         = {2026},
+  eprint       = {2607.02577},
+  archivePrefix = {arXiv},
+  note         = {Three-cell grading: tool selection, task completion,
+                  outcome correctness}
+}
+
+@misc{mcnemar,
+  title        = {McNemar's Test for Comparing Large Language Model
+                  Evaluations},
+  year         = {2026},
+  eprint       = {2602.10144},
+  archivePrefix = {arXiv}
+}
+
+@misc{margins,
+  title        = {Which Decisions Low-Bit Quantization Breaks: Margin
+                  Shrinkage in Tool-Calling Policies},
+  year         = {2026},
+  eprint       = {2608.06564},
+  archivePrefix = {arXiv},
+  note         = {Decision margins scale as m' $\approx$ c$\cdot$m + b;
+                  whether-to-call collapses at 3 bits under RTN}
+}
+
+@misc{twomode,
+  title        = {Two-Mode Failure in Sub-4-Bit Quantization: Signal
+                  Degradation versus Computation Collapse},
+  year         = {2026},
+  eprint       = {2608.08188},
+  archivePrefix = {arXiv}
+}
+
+@misc{divergence,
+  title        = {When Divergence Metrics Disagree: TVD, JSD, and Downstream
+                  Behaviour in Quantized Language Models},
+  year         = {2026},
+  eprint       = {2609.07664},
+  archivePrefix = {arXiv}
+}
+
+@misc{calibrationbottleneck,
+  title        = {Calibration is the Bottleneck: An Action-Class Diagnostic of
+                  Multi-Turn Tool-Calling},
+  year         = {2026},
+  eprint       = {2609.00949},
+  archivePrefix = {arXiv},
+  note         = {TOOL\_CALL / ASK / REFUSE / CONFIRM action classes;
+                  accuracy bounded by grounded-action rate}
+}
+
+@misc{churn,
+  title        = {Churn Beside Net Delta: Reporting Format and Correctness
+                  Volatility in Quantized Evaluation},
+  year         = {2026},
+  eprint       = {2608.15046},
+  archivePrefix = {arXiv}
+}
+
+@misc{wattcounts,
+  title        = {Watt Counts: NVML-Based Energy Measurement Protocol for
+                  LLM Inference},
+  year         = {2026},
+  eprint       = {2604.09048},
+  archivePrefix = {arXiv},
+  note         = {Cumulative energy counters; idle subtraction; protocol
+                  comparability constraints}
+}
+
+@inproceedings{emergent,
+  title        = {Do Emergent Abilities Exist in Quantized Large Language
+                  Models?},
+  booktitle    = {Proceedings of the 2024 Joint International Conference on
+                  Computational Linguistics, Language Resources and
+                  Evaluation (LREC-COLING)},
+  year         = {2024},
+  note         = {4-bit generally preserved; 2-bit severely degraded}
+}
+
+@misc{exllamav3,
+  title        = {ExLlamaV3: EXL3 Trellis-Coded Quantization and Inference},
+  author       = {{turboderp-org}},
+  howpublished = {\url{https://github.com/turboderp-org/exllamav3}},
+  year         = {2026}
+}
+
+@misc{tensorfold,
+  title        = {TensorFold: Unified {MLX}/{CUDA} Model Runtime},
+  author       = {{ashhart}},
+  howpublished = {\url{https://github.com/ashhart/TensorFold}},
+  year         = {2026},
+  note         = {CUDA backend serves EXL3, NVFP4, MLX-4bit checkpoints; MTP
+                  and DFlash2 drafting; documented TP=2 uptime issues}
+}
