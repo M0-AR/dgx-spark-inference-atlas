@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-10-18T12:43:22.294341+00:00",
+  "generated_at_utc": "2026-10-18T13:01:05.891462+00:00",
   "reference_condition": "fp16",
   "conditions_in_tables": [],
   "inputs": [
@@ -11,8 +11,8 @@
     "results/raw/toolcall-mock-smoke-20261018T092235Z.jsonl",
     "results/raw/toolcall-mock-smoke-20261018T092455Z.jsonl"
   ],
-  "readme_sha256_before": "6ae5f923b239af782d60c6f071ea71839813dd11d828fa325561f88a0beac753",
-  "readme_sha256_after": "6ae5f923b239af782d60c6f071ea71839813dd11d828fa325561f88a0beac753",
+  "readme_sha256_before": "1964d6bccefcc286fbe53a678e9faf05cb451e7c55b979578d08465250572a89",
+  "readme_sha256_after": "1964d6bccefcc286fbe53a678e9faf05cb451e7c55b979578d08465250572a89",
   "tables_sha256": {
     "agentic.md": "cfc45af999697e3a29cf9d0e2741e8343d074ddeeba73feb21ad1d314ed3e7c1",
     "changepoints.md": "a4fac72bf15b337afeed125ca73c421fb684601c6de8a4410935505b64d576c1",

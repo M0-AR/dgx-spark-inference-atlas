@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The DGX Spark Inference Atlas — Interactive Preview</title>
+<meta name="description" content="A pre-registered measurement study of quantized LLM serving for agentic tool-calling on GB10-class hardware. Explore the protocol, the live-data grading policy, and test yourself from beginner to professional.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+<style>
+:root{
+  --bg:#0b0f14; --panel:#10161d; --panel2:#0e141a; --border:rgba(255,255,255,.09);
+  --text:#e6edf3; --muted:#9aa7b4; --faint:#6e7b88;
+  --accent:#4cc2ff; --accent2:#8b7bff; --ok:#3fb950; --warn:#d29922; --bad:#f85149;
+  --code-bg:#0a0e13; --shadow:0 10px 40px rgba(0,0,0,.45);
+  --radius:16px; --radius-sm:10px;
+}
+html[data-theme="light"]{
+  --bg:#f6f8fa; --panel:#ffffff; --panel2:#f2f5f8; --border:rgba(0,0,0,.10);
+  --text:#1c2430; --muted:#57606a; --faint:#8b949e;
+  --accent:#0b72c4; --accent2:#5b4bd6; --ok:#1a7f37; --warn:#9a6700; --bad:#cf222e;
+  --code-bg:#f0f3f6; --shadow:0 10px 30px rgba(31,35,40,.10);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+code,kbd,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+.skip{position:absolute;left:-9999px}
+.skip:focus{left:12px;top:12px;background:var(--panel);padding:8px 12px;border-radius:8px;z-index:100}
+
+/* ---------- nav ---------- */
+nav{
+  position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--bg) 82%,transparent);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--border);
+}
+.nav-in{display:flex;align-items:center;gap:18px;height:56px}
+.brand{font-weight:800;letter-spacing:.4px;white-space:nowrap}
+.brand span{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.nav-links{display:flex;gap:16px;flex:1;overflow-x:auto;scrollbar-width:none}
+.nav-links::-webkit-scrollbar{display:none}
+.nav-links a{color:var(--muted);font-size:14px;white-space:nowrap;padding:6px 2px;border-bottom:2px solid transparent}
+.nav-links a:hover{color:var(--text);text-decoration:none}
+.nav-links a.active{color:var(--text);border-bottom-color:var(--accent)}
+.tools{display:flex;gap:8px}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);
+  background:var(--panel);color:var(--text);padding:9px 16px;border-radius:10px;
+  font-size:14px;font-weight:600;cursor:pointer;transition:transform .12s ease,border-color .12s ease,background .12s ease;
+}
+.btn:hover{transform:translateY(-1px);border-color:var(--accent);text-decoration:none}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#04121c;border:none}
+html[data-theme="light"] .btn.primary{color:#fff}
+.btn.ghost{background:transparent}
+.icon-btn{width:38px;height:38px;justify-content:center;padding:0;font-size:16px}
+
+/* ---------- hero ---------- */
+.hero{position:relative;overflow:hidden;padding:72px 0 34px;border-bottom:1px solid var(--border)}
+.hero::before{
+  content:"";position:absolute;inset:-40% -20% auto;height:520px;pointer-events:none;
+  background:
+    radial-gradient(420px 280px at 22% 30%, color-mix(in srgb,var(--accent) 26%,transparent), transparent 70%),
+    radial-gradient(520px 320px at 78% 12%, color-mix(in srgb,var(--accent2) 22%,transparent), transparent 70%);
+  filter:blur(8px);
+}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 12px var(--ok)}
+h1{font-size:clamp(30px,5vw,54px);line-height:1.08;margin:14px 0 10px;letter-spacing:-.02em}
+h1 .grad{background:linear-gradient(92deg,var(--accent),var(--accent2) 60%,var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.tagline{font-size:clamp(17px,2.2vw,20px);color:var(--muted);max-width:64ch}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0}
+.badge{
+  font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:999px;
+  border:1px solid var(--border);background:var(--panel);color:var(--muted);
+}
+.badge b{color:var(--text)}
+.badge.ok{border-color:color-mix(in srgb,var(--ok) 55%,transparent);color:var(--ok)}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin:6px 0 34px}
+.hero-fig{margin:10px 0 0}
+.hero-fig img{
+  width:100%;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);
+  background:var(--code-bg);display:block;
+}
+.hero-fig figcaption{color:var(--faint);font-size:13.5px;margin-top:10px;text-align:center}
+
+/* ---------- stat strip ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin:-26px 0 0;position:relative}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;box-shadow:var(--shadow)}
+.stat .n{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.stat .n em{font-style:normal;color:var(--accent)}
+.stat .l{color:var(--muted);font-size:13px}
+
+/* ---------- sections ---------- */
+main{padding:56px 0 40px}
+section{padding:34px 0;border-top:1px solid var(--border)}
+section:first-of-type{border-top:none}
+h2{font-size:clamp(22px,3.2vw,30px);letter-spacing:-.01em;margin:0 0 6px}
+.sub{color:var(--muted);margin:0 0 26px;max-width:70ch}
+h3{font-size:17px;margin:0 0 8px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.card{
+  background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px;box-shadow:var(--shadow);
+}
+.card p{margin:6px 0 0;color:var(--muted);font-size:14.5px}
+.card .k{font-size:13px;color:var(--faint);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid var(--border);color:var(--muted)}
+.pill.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 50%,transparent)}
+.pill.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,transparent)}
+.pill.info{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 50%,transparent)}
+
+/* reveal */
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .5s ease,transform .5s ease}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none}}
+
+/* pipeline */
+.pipe{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(228px,1fr))}
+.step{position:relative;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+.step .num{
+  position:absolute;top:-12px;left:16px;font-size:12px;font-weight:800;letter-spacing:.08em;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#04121c;border-radius:999px;padding:2px 10px;
+}
+html[data-theme="light"] .step .num{color:#fff}
+.step h3{margin-top:8px}
+.step p{color:var(--muted);font-size:14px;margin:6px 0 0}
+.step code{font-size:12.5px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:1px 6px}
+
+/* ladder */
+.ladder{display:flex;flex-direction:column;gap:12px}
+.row{display:grid;grid-template-columns:118px 1fr;gap:14px;align-items:center}
+.row .tag{font-weight:700;font-size:14.5px}
+.row .tag small{display:block;color:var(--faint);font-weight:500}
+.bar{height:30px;border-radius:8px;background:var(--panel2);border:1px solid var(--border);position:relative;overflow:hidden}
+.bar i{
+  position:absolute;inset:0 auto 0 0;border-radius:7px 0 0 7px;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 82%,transparent),color-mix(in srgb,var(--accent2) 82%,transparent));
+}
+.bar b{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12.5px;color:var(--muted);font-weight:700}
+.bar.alt i{background:repeating-linear-gradient(45deg,color-mix(in srgb,var(--accent2) 55%,transparent) 0 8px,transparent 8px 16px);border:1px dashed color-mix(in srgb,var(--accent2) 60%,transparent)}
+.legend{color:var(--faint);font-size:13px;margin-top:10px}
+
+/* tables */
+.tbl{width:100%;border-collapse:collapse;font-size:14px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.tbl th,.tbl td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)}
+.tbl th{background:var(--panel2);font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.tbl tr:last-child td{border-bottom:none}
+.tbl td code{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:1px 6px;font-size:12.5px}
+.mono-sm{font-size:12.5px;color:var(--faint)}
+
+/* verification list */
+.checks{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.checks li{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px}
+.checks .st{font-size:17px;line-height:1.4}
+.checks b{display:block}
+.checks span{color:var(--muted);font-size:14px}
+
+/* quiz */
+.quiz{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.quiz-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:16px 18px;border-bottom:1px solid var(--border);background:var(--panel2)}
+.tier-tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tier{border:1px solid var(--border);background:transparent;color:var(--muted);font-weight:700;font-size:13.5px;padding:7px 14px;border-radius:999px;cursor:pointer}
+.tier:hover{color:var(--text)}
+.tier.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#04121c;border-color:transparent}
+html[data-theme="light"] .tier.active{color:#fff}
+.tier .done{margin-left:6px}
+.quiz-body{padding:22px}
+.qmeta{display:flex;justify-content:space-between;align-items:center;gap:10px;color:var(--faint);font-size:13.5px;margin-bottom:12px}
+.progress{height:8px;border-radius:999px;background:var(--panel2);border:1px solid var(--border);overflow:hidden;margin-bottom:20px}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .35s ease}
+.q{font-size:18px;font-weight:700;margin:0 0 16px;line-height:1.45}
+.opts{display:grid;gap:10px}
+.opt{
+  text-align:left;background:var(--panel2);border:1px solid var(--border);color:var(--text);
+  border-radius:var(--radius-sm);padding:13px 15px;font-size:15px;cursor:pointer;
+  transition:border-color .12s ease,transform .12s ease;
+}
+.opt:hover:not(:disabled){border-color:var(--accent);transform:translateX(2px)}
+.opt:disabled{cursor:default;opacity:.95}
+.opt.correct{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,var(--panel2))}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--panel2))}
+.opt .mk{float:right;font-weight:800}
+.fb{margin-top:16px;border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:var(--radius-sm);padding:14px 16px;background:var(--panel2);font-size:14.5px;display:none}
+.fb.show{display:block}
+.fb.good{border-left-color:var(--ok)}
+.fb.bad{border-left-color:var(--bad)}
+.fb b{display:block;margin-bottom:4px}
+.fb a{font-weight:600}
+.qnav{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.result{text-align:center;padding:14px 6px}
+.result .big{font-size:44px;font-weight:800;letter-spacing:-.03em}
+.result .rank{font-size:17px;font-weight:700;margin:8px 0 4px}
+.result .hint{color:var(--muted);font-size:14.5px;max-width:60ch;margin:0 auto 18px}
+.badges-done{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:14px 0}
+
+/* glossary */
+details.gloss{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0;overflow:hidden}
+details.gloss+details.gloss{margin-top:10px}
+details.gloss summary{cursor:pointer;padding:14px 16px;font-weight:700;font-size:15px;list-style:none;display:flex;justify-content:space-between;gap:10px}
+details.gloss summary::-webkit-details-marker{display:none}
+details.gloss summary::after{content:"+";color:var(--muted);font-weight:800}
+details.gloss[open] summary::after{content:"–"}
+details.gloss p{margin:0;padding:0 16px 16px;color:var(--muted);font-size:14.5px}
+
+/* reproduce */
+pre.code{
+  background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px;overflow-x:auto;font-size:13.5px;line-height:1.6;position:relative;
+}
+pre.code .cmt{color:var(--faint)}
+.copy{position:absolute;top:10px;right:10px;font-size:12px;padding:5px 10px}
+.copybar{display:flex;justify-content:flex-end;margin-top:10px}
+
+/* footer */
+footer{border-top:1px solid var(--border);padding:34px 0 60px;color:var(--muted);font-size:14px}
+.foot-grid{display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.foot-grid h4{margin:0 0 8px;color:var(--text);font-size:14px}
+.foot-grid a{display:block;color:var(--muted);padding:2px 0}
+.foot-grid a:hover{color:var(--accent)}
+.fine{margin-top:26px;color:var(--faint);font-size:13px}
+</style>
+</head>
+<body>
+<a class="skip" href="#overview">Skip to content</a>
+
+<nav aria-label="Main">
+  <div class="wrap nav-in">
+    <div class="brand">⚡ The <span>Atlas</span></div>
+    <div class="nav-links" id="navlinks">
+      <a href="#overview">Overview</a>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#ladder">Conditions</a>
+      <a href="#live">Live data</a>
+      <a href="#verification">Verification</a>
+      <a href="#quiz">Quiz</a>
+      <a href="#glossary">Glossary</a>
+      <a href="#use-cases">Use cases</a>
+      <a href="#reproduce">Reproduce</a>
+    </div>
+    <div class="tools">
+      <a class="btn ghost" href="../README.md">README</a>
+      <button class="btn icon-btn" id="themeBtn" title="Toggle light/dark theme" aria-label="Toggle light/dark theme">🌗</button>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow"><span class="dot" aria-hidden="true"></span> Pre-registered · data collection in progress · kit published</span>
+    <h1>The DGX Spark <span class="grad">Inference Atlas</span></h1>
+    <p class="tagline">Does aggressive quantization break <b>agentic tool-calling</b> — the part of an AI system that looks things up in the real world? This study measures it on GB10-class hardware, prices it in joules, and publishes every number so it can be audited.</p>
+    <div class="badges" aria-label="Project facts">
+      <span class="badge ok">✅ MIT licensed</span>
+      <span class="badge ok">✅ <b>19</b> harness tests passing</span>
+      <span class="badge">🔒 Hypotheses fixed before data</span>
+      <span class="badge">🌐 Graded against <b>live</b> market data</span>
+      <span class="badge">📦 Spark replication kit</span>
+    </div>
+    <div class="cta">
+      <a class="btn primary" href="#quiz">Take the quiz — start here</a>
+      <a class="btn" href="../README.md">Read the full study</a>
+      <a class="btn ghost" href="#reproduce">Run it yourself</a>
+    </div>
+    <figure class="hero-fig">
+      <img src="assets/demo.gif" alt="Animated terminal demonstration: harness tests pass, a live market snapshot is captured with SHA-256 provenance, and the README tables are regenerated mechanically.">
+      <figcaption>The whole discipline in 25 seconds: validated tests → live-data capture with provenance → mechanically regenerated tables. Nothing hand-typed.</figcaption>
+    </figure>
+  </div>
+</header>
+
+<div class="wrap stats" role="list" aria-label="Key numbers">
+  <div class="stat" role="listitem"><div class="n">19</div><div class="l">harness tests passing (16 statistics · 1 live-data grader · 2 runner)</div></div>
+  <div class="stat" role="listitem"><div class="n">6</div><div class="l">pre-registered conditions (FP16 + 4/3/2-bit + 2 calibration ablations)</div></div>
+  <div class="stat" role="listitem"><div class="n">5</div><div class="l">committed study artifacts (2 market snapshots · 3 environment captures)</div></div>
+  <div class="stat" role="listitem"><div class="n">2</div><div class="l">independent live endpoints per agent episode (Kraken · ECB via Frankfurter)</div></div>
+</div>
+
+<main class="wrap">
+
+  <!-- ================= OVERVIEW ================= -->
+  <section id="overview" class="reveal">
+    <h2>What this is, in plain words</h2>
+    <p class="sub">No background needed for this section. If you can read a weather report, you can read this.</p>
+    <div class="grid g3">
+      <div class="card">
+        <div class="k">The idea</div>
+        <h3>Smaller models, same job?</h3>
+        <p>A big AI model can be squeezed from 16 bits per weight down to 4, 3, even 2 — making it smaller, faster and cheaper to run. The question everyone assumes is answered: <b>does it still work?</b> Especially when the model must <em>call tools</em> — fetch a live bitcoin price, convert currencies, format strict JSON — rather than just chat.</p>
+      </div>
+      <div class="card">
+        <div class="k">The approach</div>
+        <h3>Measure like it's a clinical trial</h3>
+        <p>Every rule — what counts as success, how many runs, which statistical test, what passes as “equivalent” — was written down <b>before</b> any measurement. That's called <b>pre-registration</b>, and it's the strongest defence against accidentally (or conveniently) fooling yourself.</p>
+      </div>
+      <div class="card">
+        <div class="k">The evidence</div>
+        <h3>Numbers no one can type by hand</h3>
+        <p>Each published table is regenerated <b>mechanically</b> from committed run files. If it's in a table, it came from an artifact — and re-running the generator produces byte-identical output. Sounds strict? That's the point.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PIPELINE ================= -->
+  <section id="pipeline" class="reveal">
+    <h2>How the machine works — 4 steps</h2>
+    <p class="sub">This is the full lifecycle of one measurement, from a model answering a question to a number safe enough to print.</p>
+    <div class="pipe">
+      <div class="step">
+        <span class="num">STEP 1 · SERVE</span>
+        <h3>Ask a real question</h3>
+        <p>An <em>episode</em> hands the model a task: “Get the BTC price in EUR and answer in strict JSON.” The model must decide <b>which tools to call</b>, call them correctly, and format the answer.</p>
+        <p><code>runner.py</code> serves each condition in isolation with a drained warm-up, so one condition never disturbs the next.</p>
+      </div>
+      <div class="step">
+        <span class="num">STEP 2 · FETCH</span>
+        <h3>Live truth, captured</h3>
+        <p>At episode time the harness fetches <b>real</b> prices — Kraken for BTC/USD, ECB reference rates for EUR/USD — and records the URL, the response, and its SHA-256 fingerprint.</p>
+        <p><code>live_data.py</code> · the served values become the episode's truth; no memorized answers can pass.</p>
+      </div>
+      <div class="step">
+        <span class="num">STEP 3 · GRADE</span>
+        <h3>Three honest checks</h3>
+        <p><b>C_tool</b>: were the tool calls valid? <b>C_task</b>: was the final JSON correct, within pre-set tolerances, and internally consistent? <b>C_outcome</b>: both, with <b>no repair needed</b>.</p>
+        <p><code>toolcall_eval.py</code> · a repaired success is a success for C_task but never for C_outcome.</p>
+      </div>
+      <div class="step">
+        <span class="num">STEP 4 · PUBLISH</span>
+        <h3>Numbers, mechanically</h3>
+        <p>Tables, statistics and the README's figures are generated from the committed records by a single script — and re-running it reproduces identical bytes.</p>
+        <p><code>sync_readme.py</code> · no README number is hand-typed, ever.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= LADDER ================= -->
+  <section id="ladder" class="reveal">
+    <h2>The conditions ladder</h2>
+    <p class="sub">Six pre-registered conditions. The first four form the <b>bit-width ladder</b> — the same model squeezed harder and harder. The last two hold the bit width fixed but change what data the quantizer studied, to test whether calibration choice matters.</p>
+    <div class="ladder" aria-label="Bit-width ladder">
+      <div class="row"><div class="tag">FP16 <small>reference</small></div><div class="bar"><i style="width:100%"></i><b>16 bits per weight</b></div></div>
+      <div class="row"><div class="tag">E40 <small>EXL3 4.0 bpw</small></div><div class="bar"><i style="width:25%"></i><b>4.0 bpw</b></div></div>
+      <div class="row"><div class="tag">E30 <small>EXL3 3.0 bpw</small></div><div class="bar"><i style="width:18.75%"></i><b>3.0 bpw</b></div></div>
+      <div class="row"><div class="tag">E20 <small>EXL3 2.0 bpw</small></div><div class="bar"><i style="width:12.5%"></i><b>2.0 bpw</b></div></div>
+      <div class="row"><div class="tag">E30-W <small>ablation</small></div><div class="bar alt"><i style="width:18.75%"></i><b>3.0 bpw · wikitext calibration</b></div></div>
+      <div class="row"><div class="tag">E30-A <small>ablation</small></div><div class="bar alt"><i style="width:18.75%"></i><b>3.0 bpw · agentic calibration</b></div></div>
+    </div>
+    <p class="legend">Bar width is proportional to bits per weight (bpw). Hatched bars are the calibration ablations — same size, different “study material” for the quantizer.</p>
+
+    <h3 style="margin-top:28px">The protocol, in numbers</h3>
+    <div class="grid g2" style="margin-top:12px">
+      <table class="tbl" aria-label="Measurement protocol">
+        <tr><th>Rule</th><th>Value</th></tr>
+        <tr><td>Warm-up before measuring</td><td><b>≥100 requests AND ≥10k output tokens</b> (both floors)</td></tr>
+        <tr><td>Repetitions × requests</td><td>5 × 8 per condition</td></tr>
+        <tr><td>Generation cap</td><td>256 tokens · temperature 0 · 64-word prompts</td></tr>
+        <tr><td>Concurrency tested</td><td>1 and 4</td></tr>
+        <tr><td>Isolation gate</td><td>CV ≤ 0.10, else flagged and comparisons marked suspect</td></tr>
+        <tr><td>Episodes per condition</td><td>≥30 (tool-calling arm)</td></tr>
+        <tr><td>Equivalence margin</td><td>±5 percentage points (only claimable via TOST)</td></tr>
+      </table>
+      <table class="tbl" aria-label="Grading tolerances">
+        <tr><th>Field</th><th>Tolerance</th><th>Why</th></tr>
+        <tr><td><code>btc_usd</code></td><td>±1.0&nbsp;%</td><td>BTC can move within an episode window; ±1 % separates “copied the live value” from “stale or made up”.</td></tr>
+        <tr><td><code>btc_eur</code></td><td>±1.0&nbsp;%</td><td>Derived by the harness — never fetched from a third party.</td></tr>
+        <tr><td><code>eur_usd</code></td><td>±0.1&nbsp;%</td><td>ECB reference rate changes once per working day; 0.1 % is far above noise, far below any real move.</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= LIVE DATA ================= -->
+  <section id="live" class="reveal">
+    <h2>Grounded in live data — provably</h2>
+    <p class="sub">Most benchmarks accept whatever the model says. This one checks the model against prices fetched <em>during the same episode</em> — then fingerprints the evidence. Here is the committed snapshot, exactly as recorded in <code>results/raw/</code>.</p>
+    <table class="tbl" aria-label="Live market snapshot committed in results/raw">
+      <tr><th>Field</th><th>Value (2026-10-18 snapshot)</th><th>Source</th><th>Evidence</th></tr>
+      <tr><td><code>btc_usd</code></td><td><b>$81,639.50</b></td><td>Kraken public ticker</td><td class="mono-sm">sha256 96b10b62… · 08:55:29Z</td></tr>
+      <tr><td><code>eur_usd</code></td><td><b>1.1253</b></td><td>ECB reference via Frankfurter</td><td class="mono-sm">sha256 e2611a1a… · 08:55:30Z</td></tr>
+      <tr><td><code>btc_eur</code></td><td><b>€72,549.10</b></td><td>computed by the harness: btc_usd ÷ eur_usd</td><td class="mono-sm">derived, never fetched</td></tr>
+    </table>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card">
+        <div class="k">Why this matters</div>
+        <h3>You can't fake it by memorizing</h3>
+        <p>A model that “remembers” last year's bitcoin price fails instantly — the tolerance check compares against today's value, fetched live. This is what makes the test a true <em>agentic</em> test: it forces the model to actually call its tools.</p>
+      </div>
+      <div class="card">
+        <div class="k">Audit trail</div>
+        <h3>Two snapshots, three seconds apart</h3>
+        <p>The harness captured two independent snapshots before big runs. Both agree on the FX leg (identical SHA-256) and on the BTC leg — a self-check the project runs before accepting any results. Files: <a href="../results/raw/market-20261018T085530Z.json">snapshot 1</a> · <a href="../results/raw/market-20261018T085533Z.json">snapshot 2</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= VERIFICATION ================= -->
+  <section id="verification" class="reveal">
+    <h2>Verification — what you can trust, and why</h2>
+    <p class="sub">Claims are separated into what is proven today, what is in progress, and what is deliberately left external.</p>
+    <ul class="checks">
+      <li><span class="st">✅</span><div><b>Statistics validated against known values</b><span>16 tests pin exact numbers for McNemar's test, bootstrap determinism, chi-square values, changepoints, equivalence testing and more — so the harness never judges a model with an untested judge.</span></div></li>
+      <li><span class="st">✅</span><div><b>End-to-end pipeline proven offline</b><span>2 mock-server tests run a real streaming server through the full runner, plus a Docker Compose “reproducibility floor” that executes the suite in a container — no GPU required.</span></div></li>
+      <li><span class="st">✅</span><div><b>Live-data graders proven end-to-end</b><span>A mock episode is graded against genuinely live Kraken/Frankfurter data; the grader test skips cleanly when offline rather than ever “passing” without network.</span></div></li>
+      <li><span class="st">✅</span><div><b>Everything mechanical</b><span>README tables, LaTeX macros and the provenance manifest are regenerated by one script from <code>results/</code>. Re-runs are byte-identical; a hash change without new raw artifacts is treated as tampering.</span></div></li>
+      <li><span class="st">✅</span><div><b>Mock runs excluded by rule</b><span>Pipeline smoke runs (model “mock”) are committed for inspection but can never appear in a results table.</span></div></li>
+      <li><span class="st">✅</span><div><b>Deviations recorded, not papered over</b><span>The local arm runs on an RTX 3090, not a GB10 — stated openly, with transfer claims kept at method level until the Spark kit is run by real Spark owners.</span></div></li>
+      <li><span class="st">⏳</span><div><b>Ladder measurements — in progress</b><span>No quantized results exist <em>yet</em>. The tables currently say so, literally. Fabricating placeholder numbers would violate the study's own rules, so you will see “no data yet” rows until real artifacts land.</span></div></li>
+      <li><span class="st">📦</span><div><b>External claims stay external</b><span>Community numbers about competing serving stacks are catalogued with sources and dates — including a direct contradiction — and none of them are merged into measured tables. The <a href="SPARK_KIT.md">Spark Kit</a> exists so anyone can adjudicate with data.</span></div></li>
+    </ul>
+  </section>
+
+  <!-- ================= QUIZ ================= -->
+  <section id="quiz" class="reveal">
+    <h2>The quiz: from scratch to professional</h2>
+    <p class="sub">Three levels, 18 questions, instant explanations. Everything asked here is answerable from this page and the linked documents — no prior machine-learning knowledge needed. Take it in order, or jump to your level.</p>
+    <div class="quiz">
+      <div class="quiz-head">
+        <div class="tier-tabs" role="tablist" aria-label="Quiz levels">
+          <button class="tier active" data-tier="0" role="tab" aria-selected="true">🌱 Explorer <span class="done" id="done0"></span></button>
+          <button class="tier" data-tier="1" role="tab" aria-selected="false">🔧 Practitioner <span class="done" id="done1"></span></button>
+          <button class="tier" data-tier="2" role="tab" aria-selected="false">🎓 Professional <span class="done" id="done2"></span></button>
+        </div>
+        <span class="pill info" id="tierHint">No background needed — start here.</span>
+      </div>
+      <div class="quiz-body" id="quizBody">
+        <div class="qmeta"><span id="qPos">Question 1 of 6</span><span id="qScore">Score: 0</span></div>
+        <div class="progress" aria-hidden="true"><i id="qBar"></i></div>
+        <p class="q" id="qText">Loading…</p>
+        <div class="opts" id="qOpts"></div>
+        <div class="fb" id="qFb" role="status"></div>
+        <div class="qnav">
+          <button class="btn primary" id="qNext" style="display:none">Next →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= GLOSSARY ================= -->
+  <section id="glossary" class="reveal">
+    <h2>Glossary — every term, in one sentence</h2>
+    <p class="sub">Read this top to bottom and you will understand every document in the repository.</p>
+    <div id="glossList"></div>
+  </section>
+
+  <!-- ================= USE CASES ================= -->
+  <section id="use-cases" class="reveal">
+    <h2>Who this repository is for</h2>
+    <p class="sub">Six audiences get something concrete here — including complete beginners.</p>
+    <div class="grid g3">
+      <div class="card"><div class="k">🧪 Researchers</div><h3>Pre-registered by default</h3><p>A complete template for honest LLM measurement: hypotheses, power analysis, multiplicity control, equivalence testing — all fixed before data, all citable.</p></div>
+      <div class="card"><div class="k">🔧 Quantization engineers</div><h3>A decision framework</h3><p>Does 3 bpw survive tool-calling? Where do failures concentrate? The ladder design and the calibration ablations turn folklore into measurable questions.</p></div>
+      <div class="card"><div class="k">⚡ DGX Spark owners</div><h3>The kit is written for you</h3><p>Exact commands to replicate the disputed TensorFold-vs-vLLM speed claims on real GB10 hardware — and publish the answer with provenance.</p></div>
+      <div class="card"><div class="k">📊 Benchmark authors</div><h3>Steal these rules</h3><p>Live-data grading, episode-time truth capture, tolerance policy, mock exclusion, byte-identical regeneration. Each rule solves a known way benchmarks lie.</p></div>
+      <div class="card"><div class="k">🎓 Learners</div><h3>From scratch to professional</h3><p>The quiz above and the Beginner guide in the README take you from “what is a token?” to discussing McNemar's exact test — with every claim linked to its source.</p></div>
+      <div class="card"><div class="k">💼 Interview preparation</div><h3>Real talking points</h3><p>Energy per token, isolation gates, statistical power, provenance. Walk in with specifics, not vibes: <b>you will know more than most interview candidates.</b></p></div>
+    </div>
+  </section>
+
+  <!-- ================= REPRODUCE ================= -->
+  <section id="reproduce" class="reveal">
+    <h2>Reproduce everything</h2>
+    <p class="sub">Five commands. The first two work on any machine — no GPU, no model downloads. The rest use any OpenAI-compatible endpoint you have.</p>
+    <pre class="code" id="reproCode"><button class="btn copy" id="copyAll" type="button">Copy</button><span class="cmt"># 1) harness self-tests — 19 tests (1 skips cleanly offline)</span>
+python3 -m pytest harness/tests -q
+
+<span class="cmt"># 2) container reproducibility floor — works without a GPU</span>
+docker compose -f docker/docker-compose.yml run --rm smoke
+
+<span class="cmt"># 3) capture environment + live market snapshot artifacts</span>
+python3 scripts/collect_env.py &amp;&amp; python3 scripts/snapshot_market.py
+
+<span class="cmt"># 4) serve any OpenAI-compatible endpoint, then measure</span>
+python3 -m harness.bench.runner --endpoint http://127.0.0.1:8080/v1 \
+    --model MODEL --tag e30 --requests 8 --reps 5 --concurrency 1,4
+python3 scripts/run_toolcall.py --endpoint http://127.0.0.1:8080/v1 \
+    --model MODEL --tag e30 --episodes 30
+
+<span class="cmt"># 5) regenerate every number in the README from the artifacts</span>
+python3 scripts/sync_readme.py</pre>
+    <p class="legend">GPU toolchain (torch + ExLlamaV3): <code>bash scripts/setup_gpu.sh</code> · DGX Spark protocol: <a href="SPARK_KIT.md">docs/SPARK_KIT.md</a></p>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <h4>The DGX Spark Inference Atlas</h4>
+        <p>Quantized serving of agentic workloads on GB10-class hardware: degradation patterns, energy, and reproducibility.</p>
+      </div>
+      <div>
+        <h4>Documents</h4>
+        <a href="../README.md">README — the full study</a>
+        <a href="METHODOLOGY.md">Methodology (pre-registration)</a>
+        <a href="STATISTICS.md">Statistics &amp; validation</a>
+        <a href="VERIFICATION.md">Verification &amp; tolerances</a>
+        <a href="RELATED_WORK.md">Related work &amp; ecosystem</a>
+        <a href="SPARK_KIT.md">Spark Kit (GB10 replication)</a>
+      </div>
+      <div>
+        <h4>Evidence</h4>
+        <a href="../results/raw/">results/raw/ — immutable records</a>
+        <a href="../results/derived/readme-sync.json">readme-sync.json — regeneration manifest</a>
+        <a href="../results/derived/macros.tex">macros.tex — numbers for the paper</a>
+        <a href="../LICENSE">MIT License</a>
+      </div>
+      <div>
+        <h4>Cite</h4>
+        <p class="mono-sm" style="line-height:1.7">The DGX Spark Inference Atlas (2026).<br>Pre-registered measurement study;<br>artifacts under results/ in this repository.</p>
+      </div>
+    </div>
+    <p class="fine">© 2026 The DGX Spark Inference Atlas contributors · MIT License · Every number on this page traces to a committed artifact. Where no artifacts exist yet, the page says so.</p>
+  </div>
+</footer>
+
+<script>
+"use strict";
+
+/* ---------- theme ---------- */
+(function(){
+  var root=document.documentElement, btn=document.getElementById("themeBtn");
+  try{ var saved=localStorage.getItem("atlas-theme"); if(saved) root.setAttribute("data-theme",saved); }catch(e){}
+  btn.addEventListener("click",function(){
+    var next=root.getAttribute("data-theme")==="dark"?"light":"dark";
+    root.setAttribute("data-theme",next);
+    try{ localStorage.setItem("atlas-theme",next); }catch(e){}
+  });
+})();
+
+/* ---------- reveal on scroll ---------- */
+(function(){
+  var els=[].slice.call(document.querySelectorAll(".reveal"));
+  if(!("IntersectionObserver" in window)){ els.forEach(function(e){e.classList.add("in");}); return; }
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add("in"); io.unobserve(en.target);} });
+  },{threshold:.08,rootMargin:"0px 0px -40px 0px"});
+  els.forEach(function(e){io.observe(e);});
+})();
+
+/* ---------- nav highlighting ---------- */
+(function(){
+  var links=[].slice.call(document.querySelectorAll("#navlinks a"));
+  var map={}; links.forEach(function(a){ var id=a.getAttribute("href").slice(1); map[id]=a; });
+  var sections=[].slice.call(document.querySelectorAll("main section, header.hero"));
+  if(!("IntersectionObserver" in window)) return;
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      var a=map[en.target.id]; if(!a) return;
+      if(en.isIntersecting){ links.forEach(function(l){l.classList.remove("active");}); a.classList.add("active"); }
+    });
+  },{rootMargin:"-45% 0px -50% 0px"});
+  sections.forEach(function(s){ if(s.id) io.observe(s); });
+})();
+
+/* ---------- copy ---------- */
+(function(){
+  var btn=document.getElementById("copyAll"), pre=document.getElementById("reproCode");
+  btn.addEventListener("click",function(){
+    var text=pre.innerText.replace(/^Copy\n/,"");
+    function done(){ btn.textContent="Copied ✓"; setTimeout(function(){ btn.textContent="Copy"; },1400); }
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(done,function(){}); }
+    else{ var ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");}catch(e){} document.body.removeChild(ta); done(); }
+  });
+})();
+
+/* ---------- glossary ---------- */
+(function(){
+  var terms=[
+    ["Quantization","Storing a model's weights with fewer bits (e.g. 4 instead of 16) so it uses less memory and runs faster — at some cost to accuracy."],
+    ["bpw (bits per weight)","How many bits each model weight uses. Lower = smaller and cheaper, usually at a quality cost. This study's ladder: 16 → 4 → 3 → 2."],
+    ["FP16 (the reference)","The unquantized 16-bit model. Every comparison is made against it, on the very same questions."],
+    ["EXL3 / ExLlamaV3","A modern quantization method and serving stack (ExLlamaV3) used for the 4/3/2-bit conditions; 'EXL3' names its trellis-based format."],
+    ["Calibration corpus","The text a quantizer 'studies' while choosing how to compress. This study tests whether studying agentic transcripts beats studying generic text (wikitext)."],
+    ["Agentic tool-calling","The model must decide to use tools (fetch a price, convert a currency), form correct arguments, and format the result — not just chat."],
+    ["Episode","One complete task attempt: question → tool calls → live data → final answer → grade. The unit of evidence."],
+    ["C_tool / C_task / C_outcome","Three nested honest checks: tool calls valid; final answer correct within tolerance; and both done with no repair needed. C_outcome = C_tool AND C_task AND no repair."],
+    ["Live-data grounding","Grading against values fetched from Kraken and the ECB at episode time, so memorized or hallucinated answers can never pass."],
+    ["Tolerance","The allowed error on a quoted value: ±1.0 % for BTC fields, ±0.1 % for EUR/USD — set before data collection with stated reasoning."],
+    ["Provenance","The recorded origin of every number: URL, timestamp, response body and its SHA-256 fingerprint. Nothing is anonymous."],
+    ["Pre-registration","Fixing hypotheses, sample sizes and analysis methods before seeing data, so you can't quietly move the goalposts afterwards."],
+    ["Warm-up","Practice runs before measuring (here: at least 100 requests and 10,000 output tokens) so a cold machine never distorts results."],
+    ["TTFT","Time To First Token: how long until the model starts answering. Measured only for streaming responses; flagged otherwise."],
+    ["CV (coefficient of variation)","How wobbly a measurement is, relative to its size. Above 0.10 the condition is flagged and treated as suspect."],
+    ["McNemar's exact test","A paired statistical test that compares two conditions on the same episodes by looking only at where they disagree."],
+    ["TOST (equivalence testing)","The only way this study will ever claim 'no difference': proving both directions stay inside a pre-declared margin (±5 percentage points here)."],
+    ["Holm–Bonferroni","A correction that keeps the overall error rate honest when many hypotheses are tested at once."],
+    ["Minimum detectable effect (MDE)","The smallest difference a study of this size can reliably see: ≈0.51 at worst, ≈0.30 typically, for 30 episodes — it detects large collapses, and says so."],
+    ["Changepoint","A point on the bit-width ladder where results bend. Reported as pattern location, never as proof of a cause."],
+    ["NVML / jogged energy","NVIDIA's telemetry interface, used to measure joules per generated token — reported both gross and idle-subtracted, never clamped."],
+    ["Mock run","A fake model used only to smoke-test the pipeline. Excluded from all tables by rule, forever."],
+    ["Idempotent regeneration","Running the table generator again produces byte-identical files. If hashes change without new raw artifacts, something is wrong — and the project treats that as a tampering signal."]
+  ];
+  var host=document.getElementById("glossList");
+  terms.forEach(function(t,i){
+    var d=document.createElement("details"); d.className="gloss"; if(i===0) d.open=true;
+    var s=document.createElement("summary"); s.textContent=t[0];
+    var p=document.createElement("p"); p.textContent=t[1];
+    d.appendChild(s); d.appendChild(p); host.appendChild(d);
+  });
+})();
+
+/* ---------- quiz ---------- */
+(function(){
+  var TIERS=[
+    {name:"Explorer", icon:"🌱", hint:"No background needed — start here.",
+     rank:function(s,n){ var r=s/n; return r>=0.8?"Explorer complete — the Practitioner level is waiting.":r>=0.5?"Good instincts! Skim the glossary, then try again.":"No problem — the overview and glossary above are your fast track."; }},
+    {name:"Practitioner", icon:"🔧", hint:"You know the basics; now the rules of evidence.",
+     rank:function(s,n){ var r=s/n; return r>=0.8?"Practitioner badge earned — the Professional level awaits.":r>=0.5?"Solid. Re-read the Verification section — it answers most of these.":"Worth a second pass over Pipeline and Verification above."; }},
+    {name:"Professional", icon:"🎓", hint:"Statistics, gates and honesty rules — the full depth.",
+     rank:function(s,n){ var r=s/n; return r>=0.8?"Professional level cleared — you now know more than most interview candidates.":r>=0.5?"Strong! The Statistics document fills the last gaps.":"These are genuinely hard — docs/STATISTICS.md and docs/METHODOLOGY.md have every answer."; }}
+  ];
+  var QS=[
+    /* ---------- tier 0: Explorer ---------- */
+    [
+      {q:"What does quantization do to a model?",
+       o:["Makes it answer more politely","Stores weights with fewer bits, so it's smaller and cheaper to run","Compresses answers to be shorter","Encrypts the model for privacy"],
+       a:1, why:"Quantization reduces the number of bits per weight — from 16 down to 4, 3 or 2 — trading some accuracy for big memory and speed savings.",
+       ref:["METHODOLOGY.md","Methodology §3"]},
+      {q:"What is a 'token'?",
+       o:["A security credential the model uses","A small chunk of text (roughly ¾ of a word) the model reads and generates","A type of error message","A unit of electricity"],
+       a:1, why:"Models read and write in tokens. 'Decode speed' — tokens per second — and 'joules per token' both build on this unit.",
+       ref:["METHODOLOGY.md","Methodology §4"]},
+      {q:"What makes this an 'agentic' test rather than a chat test?",
+       o:["The models are more aggressive","It runs on the newest hardware","The model must decide to call tools, use live data, and format a strict answer","It never fails"],
+       a:2, why:"An episode asks for something only obtainable via tools — like today's BTC price. The model must call them correctly, not just produce fluent text.",
+       ref:["VERIFICATION.md","Verification §1"]},
+      {q:"What does 'pre-registered' mean?",
+       o:["The repository is registered as a website","Hypotheses and analysis rules were fixed before any data was collected","Participants signed up in advance","The results were registered with an authority"],
+       a:1, why:"Pre-registration is a commitment device: rules set in advance cannot be quietly adjusted to fit whatever the data later shows.",
+       ref:["METHODOLOGY.md","Methodology, preamble"]},
+      {q:"Why does the atlas measure 'joules per token'?",
+       o:["Because electricity is free","To compare energy efficiency of each quantization level — and expose the real cost of serving","To slow down the benchmarks","Gamers asked for it"],
+       a:1, why:"Energy is a first-class deployment cost. The atlas reports gross and idle-subtracted joules per token with confidence intervals — and never converts them into cost claims.",
+       ref:["STATISTICS.md","Statistics §7"]},
+      {q:"In the ladder, what is FP16?",
+       o:["The fastest quantized model","A 16-bit floating point format — here, the unquantized reference everything is compared against","A type of GPU","The 16th episode"],
+       a:1, why:"FP16 is the full-precision model. All quantized conditions are graded on the same episodes as FP16, so comparisons are apples-to-apples.",
+       ref:["METHODOLOGY.md","Methodology §3.1"]}
+    ],
+    /* ---------- tier 1: Practitioner ---------- */
+    [
+      {q:"A condition's warm-up is complete when…",
+       o:["100 requests OR 10,000 output tokens are reached","100 requests AND 10,000 output tokens are BOTH reached","10 minutes have passed","The GPU is warm to the touch"],
+       a:1, why:"The pre-registered rule requires both floors. The runner's loop exits only when both are satisfied — stricter than the 'whichever is greater' reading.",
+       ref:["METHODOLOGY.md","Methodology §4.1"]},
+      {q:"A timing condition shows CV = 0.14. What happens?",
+       o:["Results are silently averaged anyway","The condition is flagged, its comparisons are marked suspect, and it is excluded from changepoint fitting","The run is deleted","CV has no role in this study"],
+       a:1, why:"CV above the pre-registered 0.10 gate signals the isolation protocol didn't hold. Rather than hide it, the atlas flags the row — openly suspect beats secretly wrong.",
+       ref:["STATISTICS.md","Statistics §6"]},
+      {q:"A model answers $81,500 when the live episode-time BTC price was $81,639.50. Does it pass the BTC tolerance?",
+       o:["Yes — within ±1.0 %","No — the difference is too large","Only if it apologises","Cannot be determined"],
+       a:0, why:"±1.0 % of $81,639.50 is ±$816. The $139 gap is well inside tolerance — the check is 'did it use live data', not 'is it a perfect oracle'.",
+       ref:["VERIFICATION.md","Verification §3"]},
+      {q:"A model's first answer has mistyped JSON; the harness retries with its documented repair path and succeeds. Which boxes does it tick?",
+       o:["C_tool and C_outcome","C_task but NOT C_outcome","Everything — a pass is a pass","Nothing; repaired answers are discarded entirely"],
+       a:1, why:"C_outcome = C_tool AND C_task AND no repair needed. A repaired success counts for C_task, but never as a clean outcome — and the repair flag is always recorded.",
+       ref:["VERIFICATION.md","Verification §4"]},
+      {q:"What does 'internally consistent' check that plain tolerance doesn't?",
+       o:["That the model's two quoted legs actually cross-rate to its quoted btc_eur","That the model is polite","That JSON is fenced","That the answer is short"],
+       a:0, why:"Two individually plausible numbers can still be mutually contradictory. The grader checks the model's own btc_eur against its own two quoted legs — a separate, recorded column.",
+       ref:["VERIFICATION.md","Verification §4"]},
+      {q:"The energy meter reports idle-subtracted net joules per token — could it be negative?",
+       o:["No, it is clamped to zero for safety","Yes — and it is shown as negative, because clamping would hide a real measurement","Only on Tuesdays","Negative values crash the report"],
+       a:1, why:"Net values are never clamped. If the measured window used less energy than the idle baseline suggests, that's visible — an honesty rule borrowed from the ML.ENERGY line of work.",
+       ref:["STATISTICS.md","Statistics §7"]}
+    ],
+    /* ---------- tier 2: Professional ---------- */
+    [
+      {q:"Why is McNemar's exact test the primary comparison for the agentic arm?",
+       o:["It flatters quantized models","It is paired on the same episodes and looks only at disagreement — no distributional assumptions","It is the only test implemented","Because it is newer than the t-test"],
+       a:1, why:"Same episodes for both conditions means pairing information is free; exact testing over discordant pairs keeps type-I error honest at small N. Known-value cases pin the implementation.",
+       ref:["STATISTICS.md","Statistics §2"]},
+      {q:"A condition shows 'no significant difference' vs FP16 on 30 episodes. May the study claim '4-bit preserves capability'?",
+       o:["Yes — non-significance proves equivalence","No — that claim requires TOST passing inside a pre-declared ±5 percentage point margin","Yes, if the p-value is above 0.5","Only with a larger font"],
+       a:1, why:"Absence of evidence is not evidence of absence. Equivalence claims are only ever written when the two one-sided tests pass inside the pre-registered margin — otherwise the sentence reads exactly 'no significant difference', with a CI.",
+       ref:["STATISTICS.md","Statistics §3"]},
+      {q:"The study tests five hypothesis families. Why Holm–Bonferroni?",
+       o:["To make p-values smaller","To control the family-wise error rate so 'one lucky hit among many tests' is not mistaken for discovery","To rank models by speed","It replaces the need for confidence intervals"],
+       a:1, why:"Testing many hypotheses inflates the chance of a false positive. Holm–Bonferroni adjusts across the primary p-value family — and exploratory tables simply carry no p-values at all.",
+       ref:["STATISTICS.md","Statistics §8"]},
+      {q:"With N=30 episodes, what does the power analysis say?",
+       o:["Any difference is detectable","The minimum detectable effect is ≈0.51 at worst and ≈0.30 typically — large collapses only","The study is underpowered and should not run","Power was never computed"],
+       a:1, why:"The Connor (1987) normal-approximation MDE is ≈0.51 when disagreement is complete, ≈0.30 for typical discordance. Smaller effects are reported as 'not resolved at this N' — with CIs.",
+       ref:["METHODOLOGY.md","Methodology §6"]},
+      {q:"The changepoint scan needs how many ladder points, and what may be claimed from it?",
+       o:["Two; causality","At least four; only pattern locations — never causal claims","Six; ranking of all models","One; everything"],
+       a:1, why:"Binary segmentation with permutation testing needs ≥4 ladder points (FP16 + three quantized). Even then the output is phrased as where the series bends on this ladder — not why.",
+       ref:["STATISTICS.md","Statistics §5"]},
+      {q:"A committed pipeline-smoke run exists under results/raw with model 'mock'. How does it relate to the published tables?",
+       o:["It is averaged in for stability","It is excluded by rule — mock runs can never enter a table","It replaces missing data","Only its best episodes are used"],
+       a:1, why:"Mock runs prove the pipeline end-to-end but are quarantined by an explicit rule enforced in the table generator itself. Tables contain evidence runs only — and regeneration is byte-idempotent, so this is checkable.",
+       ref:["../scripts/sync_readme.py","sync_readme.py header"]}
+    ]
+  ];
+
+  var state={tier:0, idx:0, score:[0,0,0], answered:[false,false,false], picks:[[],[],[]], finished:[false,false,false]};
+  var $=function(id){return document.getElementById(id);};
+  var qPos=$("qPos"), qScore=$("qScore"), qBar=$("qBar"), qText=$("qText"), qOpts=$("qOpts"), qFb=$("qFb"), qNext=$("qNext"), tierHint=$("tierHint");
+  var LETTERS=["A","B","C","D"];
+
+  function renderTierButtons(){
+    [].forEach.call(document.querySelectorAll(".tier"),function(b,i){
+      b.classList.toggle("active", i===state.tier);
+      b.setAttribute("aria-selected", i===state.tier?"true":"false");
+      $("done"+i).textContent = state.finished[i] ? (state.score[i]+"/"+QS[i].length+" ✓") : "";
+    });
+    tierHint.textContent = TIERS[state.tier].hint;
+  }
+
+  function renderQuestion(){
+    var tier=state.tier, list=QS[tier], i=state.idx, item=list[i];
+    qPos.textContent="Question "+(i+1)+" of "+list.length+" — "+TIERS[tier].icon+" "+TIERS[tier].name;
+    qScore.textContent="Score: "+state.score[tier];
+    qBar.style.width=(100*i/list.length)+"%";
+    qText.textContent=item.q;
+    qFb.className="fb"; qFb.innerHTML="";
+    qNext.style.display="none"; qNext.textContent = (i===list.length-1)?"Finish level →":"Next →";
+    qOpts.innerHTML="";
+    var already=state.answered[tier]&&state.picks[tier][i]!==undefined&&state.picks[tier][i]!==null;
+    item.o.forEach(function(txt,oi){
+      var b=document.createElement("button");
+      b.className="opt"; b.type="button";
+      b.innerHTML='<span class="mk"></span>'+LETTERS[oi]+". "+txt;
+      if(already){
+        b.disabled=true;
+        if(oi===item.a){ b.classList.add("correct"); b.querySelector(".mk").textContent="✓"; }
+        if(oi===state.picks[tier][i]&&oi!==item.a){ b.classList.add("wrong"); b.querySelector(".mk").textContent="✕"; }
+      } else {
+        b.addEventListener("click",function(){ answer(oi,b); });
+      }
+      qOpts.appendChild(b);
+    });
+    if(already){ showFeedback(state.picks[tier][i]); qNext.style.display="inline-flex"; }
+  }
+
+  function showFeedback(pick){
+    var item=QS[state.tier][state.idx];
+    var good=pick===item.a;
+    qFb.className="fb show "+(good?"good":"bad");
+    qFb.innerHTML="<b>"+(good?"✅ Correct.":"❌ Not quite — the correct answer is "+LETTERS[item.a]+".")+"</b>"+item.why+
+      '<br><a href="'+item.ref[0]+'">Read more: '+item.ref[1]+" →</a>";
+  }
+
+  function answer(pick,btn){
+    var tier=state.tier;
+    if(state.answered[tier]&&state.picks[tier][state.idx]!=null) return;
+    state.picks[tier][state.idx]=pick;
+    state.answered[tier]=true;
+    var item=QS[tier][state.idx];
+    if(pick===item.a) state.score[tier]++;
+    [].forEach.call(qOpts.children,function(b,oi){
+      b.disabled=true;
+      if(oi===item.a){ b.classList.add("correct"); b.querySelector(".mk").textContent="✓"; }
+      if(oi===pick&&pick!==item.a){ b.classList.add("wrong"); b.querySelector(".mk").textContent="✕"; }
+    });
+    if(btn){ btn.blur(); }
+    showFeedback(pick);
+    qScore.textContent="Score: "+state.score[tier];
+    qNext.style.display="inline-flex";
+    qNext.focus();
+  }
+
+  function next(){
+    var tier=state.tier, list=QS[tier];
+    if(state.idx<list.length-1){ state.idx++; renderQuestion(); return; }
+    state.finished[tier]=true;
+    renderResult();
+    renderTierButtons();
+  }
+
+  function renderResult(){
+    var tier=state.tier, list=QS[tier], s=state.score[tier];
+    qBar.style.width="100%";
+    qPos.textContent="Level complete — "+TIERS[tier].icon+" "+TIERS[tier].name;
+    qScore.textContent="Score: "+s+"/"+list.length;
+    qText.textContent="";
+    qOpts.innerHTML="";
+    qFb.className="fb"; qFb.innerHTML="";
+    qNext.style.display="none";
+    var total=state.score.reduce(function(a,b){return a+b;},0);
+    var allDone=state.finished.every(Boolean);
+    var tail = allDone
+      ? '<div class="hint">Grand total: <b>'+total+' / 18</b>.'+(total>=15?' You now know more than most interview candidates.':' Revisit any level above — explanations are one click away.')+'</div>'
+      : '<div class="hint">'+(tier<2?'Next level: '+TIERS[tier+1].icon+' '+TIERS[tier+1].name+'.':'Explore the levels above — every question carries its own explanation.')+'</div>';
+    var div=document.createElement("div"); div.className="result";
+    div.innerHTML='<div class="big">'+s+' / '+list.length+'</div>'+
+      '<div class="rank">'+TIERS[tier].rank(s,list.length)+'</div>'+
+      '<div class="badges-done">'+
+        (state.finished[0]?'<span class="pill ok">🌱 Explorer ✓</span>':'<span class="pill">🌱 Explorer</span>')+
+        (state.finished[1]?'<span class="pill ok">🔧 Practitioner ✓</span>':'<span class="pill">🔧 Practitioner</span>')+
+        (state.finished[2]?'<span class="pill ok">🎓 Professional ✓</span>':'<span class="pill">🎓 Professional</span>')+
+      '</div>'+tail;
+    var nav=document.createElement("div"); nav.className="qnav"; nav.style.justifyContent="center";
+    if(tier<2){
+      var b1=document.createElement("button"); b1.className="btn primary"; b1.textContent="Start "+TIERS[tier+1].name+" →";
+      b1.addEventListener("click",function(){ switchTier(tier+1); }); nav.appendChild(b1);
+    }
+    var b2=document.createElement("button"); b2.className="btn ghost"; b2.textContent="Retake this level";
+    b2.addEventListener("click",function(){ resetTier(tier); }); nav.appendChild(b2);
+    var b3=document.createElement("button"); b3.className="btn ghost"; b3.textContent="Restart everything";
+    b3.addEventListener("click",function(){ [0,1,2].forEach(resetTier); switchTier(0); }); nav.appendChild(b3);
+    div.appendChild(nav);
+    qOpts.appendChild(div);
+  }
+
+  function resetTier(t){
+    state.score[t]=0; state.idx=0; state.picks[t]=[]; state.finished[t]=false; state.answered[t]=false;
+  }
+
+  function switchTier(t){
+    state.tier=t; state.idx=0; state.answered[t]=!!state.finished[t];
+    renderTierButtons();
+    if(state.finished[t]){ renderResult(); } else { renderQuestion(); }
+  }
+
+  [].forEach.call(document.querySelectorAll(".tier"),function(b){
+    b.addEventListener("click",function(){ switchTier(parseInt(b.dataset.tier,10)); });
+  });
+  qNext.addEventListener("click",next);
+
+  renderTierButtons();
+  renderQuestion();
+})();
+</script>
+</body>
+</html>

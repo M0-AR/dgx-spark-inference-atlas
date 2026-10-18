@@ -13,7 +13,7 @@ generated from committed run artifacts.**
 
 > **In plain words.** Squeeze a language model to a fraction of its size — does it still *do the job*? This repository is a public, auditable experiment that compresses one model from 16 bits per weight down to 4, 3 and 2, then makes it perform real tasks: look up live Bitcoin and euro prices, convert currencies, and answer in exact formats. Every rule was published before the first measurement, every number below is generated from committed evidence files, and the prices the model is graded against are fetched — with a cryptographic fingerprint — at the moment of each test. Where results don't exist yet, the tables say "no data yet". An atlas that invents numbers is a novel, not an atlas.
 
-> 🔎 **Two-minute version:** open [`preview.html`](preview.html) — this README's facts as an interactive page with a dashboard, the bit-width ladder, a glossary and an 18-question quiz. Prefer reading? Start with the [🌱 beginner guide](#-beginner-guide--read-this-and-you-are-a-professional).
+> 🔎 **Two-minute version:** open the live preview — **[https://m0-ar.github.io/dgx-spark-inference-atlas/preview.html](https://m0-ar.github.io/dgx-spark-inference-atlas/preview.html)** — this README's facts as an interactive page with a dashboard, the bit-width ladder, a glossary and an 18-question quiz. The same page ships in-repo as [`preview.html`](preview.html) and works offline. Prefer reading? Start with the [🌱 beginner guide](#-beginner-guide--read-this-and-you-are-a-professional).
 
 This repository is a pre-registered measurement study, not a leaderboard. It
 asks whether aggressive quantization (EXL3 trellis 2–4 bpw) preserves
@@ -549,17 +549,27 @@ manager:
 **Open it locally.** Double-click `preview.html`, or serve the folder with
 `python3 -m http.server 8000` and visit `http://localhost:8000`.
 
-**Publish it with GitHub Pages (about one minute).** The repository ships a
-root `index.html` (a redirect to `preview.html`) and a `.nojekyll` file (so
-nothing is reprocessed), which makes branch deploys work with zero
-configuration:
+**Live links.** All three entry paths resolve on the deployed site:
+
+- [`/`](https://m0-ar.github.io/dgx-spark-inference-atlas/) — short link (redirects to the preview);
+- [`/preview.html`](https://m0-ar.github.io/dgx-spark-inference-atlas/preview.html) — the preview page itself;
+- [`/docs/preview.html`](https://m0-ar.github.io/dgx-spark-inference-atlas/docs/preview.html) — the same page served from the `docs/` mirror.
+
+**Publish your own copy (about one minute).** Both entry layouts ship in the
+repository, so either Pages source setting works: a root `index.html` +
+`preview.html`, and a `docs/` mirror (`docs/index.html` + `docs/preview.html`,
+a path-adjusted copy of the root page) — each folder with its own `.nojekyll`
+so nothing is reprocessed. Recommended source: **/ (root)**, which serves all
+three paths above; the mirror keeps `/` and `/preview.html` working even if
+the source is set to **/docs**.
 
 1. Push this repository to GitHub.
 2. On GitHub, open the repository → **Settings** → **Pages**.
 3. Under *Build and deployment*, choose **Deploy from a branch**; select
    branch **main** and folder **/ (root)**; press **Save**.
 4. Wait for the first build; your preview appears at
-   `https://<your-username>.github.io/<repository-name>/`.
+   `https://<your-username>.github.io/<repository-name>/`
+   (this repository's live copy: <https://m0-ar.github.io/dgx-spark-inference-atlas/>).
 
 The README you are reading and the preview page are generated from the same
 facts: if a number moves, both move.
