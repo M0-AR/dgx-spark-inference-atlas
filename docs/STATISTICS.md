@@ -46,8 +46,10 @@ sentence, with the CI.
 ## 4. Rank consistency across the ladder
 
 - `friedman_test` (implemented via the standard statistic with
-  `_chi2_sf` survival function; validated against critical values
-  χ²(0.05; df=1,2,4,5) = 3.841, 5.991, 9.488, 11.070 within 1e-6).
+  `_chi2_sf` survival function; the survival function is validated against
+  critical values χ²(0.05; df=1,2,4,5) = 3.841, 5.991, 9.488, 11.070 within
+  1e-6, and the test itself has a known-value case — perfectly agreeing
+  rankings over 3 conditions × 3 blocks give χ²=6, df=2, p=e⁻³).
 - Post-hoc ordering is reported descriptively with `cliffs_delta` effect
   sizes (Romano thresholds: negligible <0.147, small <0.33, medium <0.474,
   large otherwise), *not* as pairwise tests, to stay within the Holm family.
@@ -76,10 +78,11 @@ Known limitation: with 4–6 ladder points, a changepoint is a statement about
   difference it per condition and divide by generated tokens. Known
   caveats: counter granularity varies by driver; on some systems it is
   whole-device (not per-process); MIG is not supported here. We therefore
-  (a) report idle-baseline-subtracted and raw values, (b) treat joule/token
-  as an estimate with CI over repetitions, and (c) never convert it into
-  cost claims. Anchor: NVIDIA's own measurement caveats + Watt Counts
-  (arXiv:2604.09048).
+  (a) report idle-baseline-subtracted and raw values — the idle-subtracted
+  net value is never clamped at zero, so a negative net is visible as such
+  (ML.ENERGY best practice), (b) treat joule/token as an estimate with CI
+  over repetitions, and (c) never convert it into cost claims. Anchor:
+  NVIDIA's own measurement caveats + Watt Counts (arXiv:2604.09048).
 
 ## 8. Multiplicity policy
 
@@ -94,7 +97,11 @@ p-hacking-by-table-spelunking.
 - Every stochastic procedure takes an explicit seed; the default seed 0 is
   what the README tables were generated with; re-running `scripts/sync_readme.py`
   reproduces identical numbers (bit-for-bit) from the committed raw records.
-- `test_stats.py` is run in CI (`make test`); 12 known-value tests cover the
-  exact tests (McNemar), chi-square survival values, bootstrap determinism,
-  changepoint detection on a synthetic step vs pure noise, CV, Cliff's delta
+- `test_stats.py` runs in the offline test target (`make test`, which
+  pytest-collects all of `harness/tests/`: 19 tests locally — 16 stats,
+  1 live-data grader test that skips cleanly when offline, 2 mock-server
+  runner tests). The stats known-value tests cover McNemar exact, the
+  McNemar MDE planning formula (Connor 1987), normal-ppf and chi-square
+  survival values, bootstrap determinism and seed sensitivity, changepoint
+  detection on a synthetic step vs pure noise, CV, Friedman, Cliff's delta
   extremes (±1), and TOST behaviour on identical samples.

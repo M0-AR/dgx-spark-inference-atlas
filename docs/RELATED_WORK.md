@@ -9,10 +9,11 @@ merged into measured tables (see VERIFICATION §6).
 ## 1. Benchmarking methodology
 
 - **IETF draft-gaikwad-llm-benchmarking-methodology-01** — mandates warm-up
-  (≥100 requests or ≥10k output tokens), probe-stability verification (<10 %
-  variance) before measurement, drain between conditions, and publishes the
-  metric hierarchy. Our runner implements its warm-up and drain clauses
-  verbatim and records deviations.
+  (≥100 requests or 10,000 output tokens, whichever is greater), probe-stability
+  verification (<10 % variance) before measurement, drain between conditions,
+  and publishes the metric hierarchy. Our runner satisfies both warm-up
+  floors conservatively (it exits only when 100 requests **and** 10k tokens
+  are met), implements the drain clause verbatim, and records deviations.
 - **Sequential isolation protocol** (arXiv:2610.09778) — pre-measurement
   ISF/ISD phases; reported timing CV drop from 15.2 % to 2.2 % across 5
   repetitions. Our H5 gate (CV ≤ 0.10) is a conservative version of this.

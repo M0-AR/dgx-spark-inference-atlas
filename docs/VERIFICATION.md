@@ -27,7 +27,8 @@ For every episode, the tool executor records, alongside the served values:
 - UTC timestamp of the fetch;
 - the harness clock time used in grading.
 
-These records are committed inside `results/raw/run-*.jsonl`. A grader that
+These records are committed inside `results/raw/toolcall-*.jsonl` (timing-only
+runner passes write the separate `results/raw/run-*.jsonl`). A grader that
 used a *later* snapshot than the one served to the model would be dishonest —
 so grading compares against the episode-captured values, and the
 before/after snapshots only quantify drift over the condition window.
@@ -50,9 +51,11 @@ marginal pass can be audited later.
   (hallucinated names fail; count recorded), arguments parse as JSON objects.
 - **C_task** — final answer is strict JSON with exactly the required keys and
   numeric values within tolerance of the episode-captured truth; the derived
-  `btc_eur` must be *consistent with the model's own two quoted legs* (we
-  check both: internal consistency and truth tolerance — these are separate
-  cell columns).
+  `btc_eur` must be *consistent with the model's own two quoted legs*. Both
+  are checked and recorded as separate columns: `value_within_tolerance`
+  (truth tolerance, per REQUIRED key) and `internally_consistent` (the quoted
+  legs cross-rate to the quoted `btc_eur` within the `btc_eur` tolerance, or
+  `None` when the answer was not schema-valid).
 - **C_outcome** — C_tool ∧ C_task ∧ output required no repair. Repair paths
   (`fenced JSON`, `reasoning prefix`) are attempted in a fixed documented
   order and flagged; a repaired success is a success for C_task but never
@@ -84,8 +87,10 @@ Rules for any number that is not ours:
 
 - `python3 scripts/snapshot_market.py` twice → FX identical, BTC within drift;
 - `python3 scripts/collect_env.py` → digests of harness + GPU + driver;
-- `python3 -m pytest harness/tests -q` → all green, including live-grader
-  test (skips offline);
+- `python3 -m pytest harness/tests -q` → 19 tests locally (16 stats, 1
+  live-data grader test that skips cleanly offline, 2 mock-server runner
+  tests);
 - `python3 scripts/sync_readme.py` → table regeneration hash recorded in
-  `results/derived/readme-sync.json` (if the hash changes without new raw
-  artifacts, CI treats it as tampering).
+  `results/derived/readme-sync.json`; re-running it is idempotent (verified
+  byte-for-byte), and a hash change without new raw artifacts is treated as
+  tampering.

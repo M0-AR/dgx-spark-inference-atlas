@@ -35,8 +35,10 @@ from pathlib import Path
 from typing import Any
 
 from . import metrics as M
+from . import stats as S
 
 REPO = Path(__file__).resolve().parents[2]
+DRAIN_S = 10.0  # sequential-isolation drain between conditions
 SEED_PHRASE = (
     "The quick brown fox jumps over the lazy dog. "
     "Benchmark determinism requires identical inputs. "
@@ -82,6 +84,7 @@ class ConditionSummary:
     cv_flag: bool
     energy: dict[str, Any] | None
     idle_probe_ms: float | None
+    idle_power_w: float | None
     errors: int
     started_utc: str
     ended_utc: str
@@ -153,13 +156,23 @@ def _one_request(condition: str, base_url: str, model: str, prompt: str,
     try:
         ttft, total_ms, out_tokens, finish = _chat_stream(
             base_url, model, prompt, max_tokens, temperature, seed)
-        decode_s = max((total_ms - (ttft or 0.0)) / 1000, 1e-6)
+        if ttft is None:
+            # non-streaming endpoint (or no content deltas): TTFT is not
+            # observable, so it is recorded as equal to total latency and the
+            # record is marked; such rows are excluded from decode tok/s.
+            ttft_ms: float = total_ms
+            ttft_is_total = True
+            decode_tok_s = 0.0
+        else:
+            decode_s = max((total_ms - ttft) / 1000, 1e-6)
+            ttft_ms = ttft
+            ttft_is_total = False
+            decode_tok_s = out_tokens / decode_s if out_tokens else 0.0
         out_q.put(RequestResult(
             condition=condition, req_index=req_index, rep=rep,
-            started_utc=started, ttft_ms=ttft, total_ms=total_ms,
-            output_tokens=out_tokens,
-            decode_tok_s=out_tokens / decode_s if out_tokens else 0.0,
-            ttft_is_total=False, finish_reason=finish))
+            started_utc=started, ttft_ms=ttft_ms, total_ms=total_ms,
+            output_tokens=out_tokens, decode_tok_s=decode_tok_s,
+            ttft_is_total=ttft_is_total, finish_reason=finish))
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError,
             json.JSONDecodeError, OSError) as exc:
         out_q.put(RequestResult(
@@ -173,25 +186,26 @@ def _run_wave(base_url: str, model: str, condition: str, prompts: list[str],
               max_tokens: int, temperature: float, seed_base: int,
               concurrency: int, rep: int) -> list[RequestResult]:
     out_q: "queue.Queue[RequestResult]" = queue.Queue()
-    threads: list[threading.Thread] = []
-    gate = threading.Barrier(min(concurrency, len(prompts)))
     results: list[RequestResult] = []
 
-    def worker(i: int, prompt: str) -> None:
+    def worker(i: int, prompt: str, gate: threading.Barrier) -> None:
         gate.wait()
         _one_request(condition, base_url, model, prompt, max_tokens,
                      temperature, seed_base + i, i, rep, out_q)
 
-    for i, prompt in enumerate(prompts):
-        t = threading.Thread(target=worker, args=(i, prompt))
-        t.start()
-        threads.append(t)
-        if len(threads) == concurrency:
-            for t2 in threads:
-                t2.join()
-            threads = []
-    for t2 in threads:
-        t2.join()
+    # Flush in batches of <= concurrency; the barrier is sized to the actual
+    # batch so a partial final batch cannot deadlock waiting on a full gate.
+    for start in range(0, len(prompts), concurrency):
+        batch = prompts[start:start + concurrency]
+        gate = threading.Barrier(len(batch))
+        threads = [
+            threading.Thread(target=worker, args=(start + off, prompt, gate))
+            for off, prompt in enumerate(batch)
+        ]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
     while not out_q.empty():
         results.append(out_q.get())
     return results
@@ -211,6 +225,7 @@ def run_condition(base_url: str, model: str, tag: str, *,
                   max_tokens: int, prompt_words: int,
                   warmup_min_requests: int = 100,
                   warmup_min_tokens: int = 10_000,
+                  warmup_skipped: bool = False,
                   ) -> tuple[list[RequestResult], ConditionSummary, list[dict]]:
     condition = f"{tag}-c{concurrency}"
     prompts = [build_prompt(prompt_words, salt=r * 1000 + i)
@@ -219,44 +234,57 @@ def run_condition(base_url: str, model: str, tag: str, *,
     notes: list[str] = []
 
     # ---- warm-up (drained, not measured) ----
+    # IETF draft-gaikwad-llm-benchmarking section 4.5.1 requires the larger of
+    # >=100 requests / >=10k output tokens; we satisfy both conservatively.
     warm_reqs = 0
     warm_toks = 0
-    max_warm_iters = max(2 * warmup_min_requests, 4)
-    while (warm_reqs < warmup_min_requests and warm_toks < warmup_min_tokens
-           and warm_reqs < max_warm_iters):
-        p = build_prompt(max(prompt_words // 2, 32), salt=warm_reqs)
-        try:
-            _, _, toks, _ = _chat_stream(base_url, model, p, max_tokens, 0.0,
-                                         warm_reqs)
-            warm_toks += toks
-        except Exception as exc:
-            notes.append(f"warmup error at request {warm_reqs}: {exc}")
-            break
-        warm_reqs += 1
-    warmup_compliant = (warm_reqs >= warmup_min_requests
-                        or warm_toks >= warmup_min_tokens)
-    if not warmup_compliant:
+    if warmup_skipped:
+        notes.append("WARMUP DEVIATION: skipped by flag")
+    else:
+        max_warm_iters = max(2 * warmup_min_requests, 4)
+        while ((warm_reqs < warmup_min_requests or warm_toks < warmup_min_tokens)
+               and warm_reqs < max_warm_iters):
+            p = build_prompt(max(prompt_words // 2, 32), salt=warm_reqs)
+            try:
+                _, _, toks, _ = _chat_stream(base_url, model, p, max_tokens,
+                                             0.0, warm_reqs)
+                warm_toks += toks
+            except Exception as exc:
+                notes.append(f"warmup error at request {warm_reqs}: {exc}")
+                break
+            warm_reqs += 1
+    warmup_compliant = (not warmup_skipped
+                        and warm_reqs >= warmup_min_requests
+                        and warm_toks >= warmup_min_tokens)
+    if not warmup_skipped and not warmup_compliant:
         notes.append(f"WARMUP DEVIATION: only {warm_reqs} reqs / {warm_toks} tokens")
 
     idle_probe = _probe_latency(base_url, model)
+    idle_power_w = M.idle_power_probe_w()
 
     # ---- measured waves ----
     all_results: list[RequestResult] = []
-    with M.EnergyMeter(label=condition,
-                       tokens=max_tokens * requests * reps) as meter:
+    with M.EnergyMeter(label=condition, idle_power_w=idle_power_w) as meter:
         for rep in range(reps):
             wave = _run_wave(base_url, model, condition, prompts[
                 rep * requests:(rep + 1) * requests],
                 max_tokens, 0.0, seed_base=10_000 * rep, concurrency=concurrency,
                 rep=rep)
             all_results.extend(wave)
-    energy = meter.reading().to_dict() if M.nvml_available() else None
+    measured_tokens = sum(r.output_tokens for r in all_results if not r.error)
+    energy = (meter.reading(tokens=measured_tokens).to_dict()
+              if M.nvml_available() else None)
 
     ok = [r for r in all_results if not r.error]
     lat = M.summarize_latencies([r.total_ms for r in ok])
-    tok_s_vals = [r.decode_tok_s for r in ok if r.output_tokens > 0]
+    streamed = [r for r in ok if not r.ttft_is_total]
+    nonstream = len(ok) - len(streamed)
+    if nonstream:
+        notes.append(f"{nonstream}/{len(ok)} responses had no streamed TTFT "
+                     "(non-streaming endpoint?); excluded from decode tok/s")
+    tok_s_vals = [r.decode_tok_s for r in streamed if r.output_tokens > 0]
     ts = M.summarize_latencies(tok_s_vals)
-    cv = M.coefficient_of_variation(tok_s_vals)
+    cv = S.coefficient_of_variation(tok_s_vals)
     cv_flag = bool(cv == cv and cv > 0.10)  # NaN-safe
     if cv_flag:
         notes.append(f"CV over decode tok/s = {cv:.3f} > 0.10 (isolation suspect)")
@@ -266,8 +294,8 @@ def run_condition(base_url: str, model: str, tag: str, *,
         reps=reps, warmup_requests=warm_reqs, warmup_output_tokens=warm_toks,
         warmup_compliant=warmup_compliant, latency=lat, decode_tok_s=ts,
         cv_flag=cv_flag, energy=energy, idle_probe_ms=idle_probe,
-        errors=len(all_results) - len(ok), started_utc=started,
-        ended_utc=_utc(), notes=notes)
+        idle_power_w=idle_power_w, errors=len(all_results) - len(ok),
+        started_utc=started, ended_utc=_utc(), notes=notes)
     return all_results, summary, []
 
 
@@ -292,19 +320,22 @@ def main() -> None:
 
     summaries: list[dict[str, Any]] = []
     meta = {
-        "run_id": run_id, "model": args.model, "endpoint": args.endpoint,
-        "warmup_policy": "skip" if args.skip_warmup else ">=100req|>=10k tok",
+        "run_id": run_id, "tag": args.tag, "model": args.model,
+        "endpoint": args.endpoint,
+        "warmup_policy": ("skip (recorded deviation)" if args.skip_warmup
+                          else ">=100 req AND >=10k out tok (both), drained"),
         "generated_by": "harness/bench/runner.py", "started_utc": _utc(),
     }
     with raw_path.open("w") as fh:
         fh.write(json.dumps({"type": "meta", **meta}) + "\n")
-        for conc in [int(c) for c in args.concurrency.split(",")]:
+        for idx, conc in enumerate([int(c) for c in args.concurrency.split(",")]):
+            if idx:
+                time.sleep(DRAIN_S)  # sequential isolation between conditions
             results, summary, _ = run_condition(
                 args.endpoint, args.model, args.tag, requests=args.requests,
                 reps=args.reps, concurrency=conc, max_tokens=args.max_tokens,
                 prompt_words=args.prompt_words,
-                warmup_min_requests=1 if args.skip_warmup else 100,
-                warmup_min_tokens=1 if args.skip_warmup else 10_000)
+                warmup_skipped=args.skip_warmup)
             for r in results:
                 fh.write(json.dumps({"type": "request", **asdict(r)}) + "\n")
             summaries.append(asdict(summary))

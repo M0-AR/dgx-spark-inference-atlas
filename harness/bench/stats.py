@@ -277,7 +277,7 @@ class Changepoint:
 def single_changepoint(
     y: Sequence[float],
     *,
-    n_perm: int = 20_000,
+    n_perm: int = 2_000,
     seed: int = 0,
     min_segment: int = 2,
 ) -> Changepoint:
@@ -322,7 +322,7 @@ def find_changepoints(
     y: Sequence[float],
     *,
     alpha: float = 0.01,
-    n_perm: int = 20_000,
+    n_perm: int = 2_000,
     seed: int = 0,
     min_segment: int = 3,
 ) -> list[Changepoint]:
@@ -361,18 +361,29 @@ def coefficient_of_variation(x: Sequence[float]) -> float:
 
 
 def minimum_detectable_degradation_mcnemar(
-    n_items: int, *, alpha: float = 0.05, power: float = 0.8
+    n_items: int,
+    *,
+    alpha: float = 0.05,
+    power: float = 0.8,
+    p_discordant: float = 1.0,
 ) -> float:
-    """Rough MDE for McNemar on n paired items: smallest discordant-rate-driven
-    accuracy drop that is detectable at given alpha/power (normal approx).
-    Returns the detectable difference in proportions of 'b - c' events.
+    """Minimum detectable accuracy difference for McNemar on n paired items.
+
+    Normal-approximation MDE in the difference of paired proportions:
+    delta = (z_{1-alpha/2} + z_{power}) * sqrt(p_discordant / n_items),
+    Connors (1987) / the standard power formula for the paired
+    (McNemar) case, as implemented by e.g. Stata's power pairedproportions.
+    'p_discordant' is the anticipated share of discordant pairs; the default
+    1.0 gives the conservative worst case. Values are reported as accuracy
+    differences (proportions), matching docs/STATISTICS.md section 6.
     """
+    if n_items < 1:
+        raise ValueError("n_items must be >= 1")
+    if not 0.0 < p_discordant <= 1.0:
+        raise ValueError("p_discordant must be in (0, 1]")
     z_a = _norm_ppf(1 - alpha / 2)
     z_b = _norm_ppf(power)
-    # For McNemar, Var(b-c under H0) ~ n * p_discordant; with equal discordant
-    # rates the minimum detectable |b-c|/n ~ (z_a + z_b)*sqrt(2*p_d/n)... we
-    # report the conservative bound assuming p_discordant <= 1:
-    return float((z_a + z_b) * math.sqrt(2.0 / n_items))
+    return float((z_a + z_b) * math.sqrt(p_discordant / n_items))
 
 
 def _norm_ppf(p: float) -> float:

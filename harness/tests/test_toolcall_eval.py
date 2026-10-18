@@ -9,6 +9,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from harness.bench import toolcall_eval as te  # noqa: E402
@@ -81,25 +83,28 @@ class FencedClient(PerfectClient):
                                          "content": text}}]}
 
 
-def _live_or_skip():
+def _live_snapshot_or_skip():
     from harness.bench import live_data as ld
     try:
         return ld.snapshot_market()
-    except ld.LiveDataError:
-        return None
+    except ld.LiveDataError as exc:
+        pytest.skip(f"live data unavailable: {exc}")
 
 
 def test_graders_with_live_data():
     """Single consolidated live test: run a perfect and two degraded plans
-    through the real episode runner (live tool execution) and grade them."""
-    snap = _live_or_skip()
-    if snap is None:
-        return
+    through the real episode runner (live tool execution) and grade them.
+
+    Skips (pytest.skip) when the live endpoints are unreachable, so the
+    offline suite reports it as skipped, not passed.
+    """
+    _live_snapshot_or_skip()
 
     rec = te.run_episode(PerfectClient())
     g = te.grade_episode(rec)
     assert g["C_tool"] and g["C_task"] and g["C_outcome"], g
     assert g["parse_ok_no_repair"] and not g["needed_repair"]
+    assert g["internally_consistent"] is True
 
     # Degraded agent A: hallucinated tool.
     class HallucinatingClient(ScriptedClient):
@@ -119,6 +124,7 @@ def test_graders_with_live_data():
     # Degraded agent B: right values, fenced JSON (repair-needed).
     g3 = te.grade_episode(te.run_episode(FencedClient()))
     assert g3["C_task"] and not g3["C_outcome"] and g3["needed_repair"]
+    assert g3["internally_consistent"] is True
 
 
 if __name__ == "__main__":  # allow direct run without pytest

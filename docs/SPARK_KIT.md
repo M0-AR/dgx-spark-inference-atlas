@@ -13,9 +13,10 @@ schemas match.
    framework commits. There is a documented case of a drafter repo
    republishing three different weight files under the same name
    (Reederey87) — treat every drafter as guilty until pinned.
-2. **Warm-up ≥100 requests or ≥10k output tokens** before any measured
-   window (IETF methodology draft; the runner enforces it and logs
-   deviations).
+2. **Warm-up: ≥100 requests AND ≥10k output tokens** before any measured
+   window — both floors (the IETF methodology draft's "100 requests or
+   10,000 output tokens, whichever is greater" policy is satisfied
+   conservatively; the runner enforces it and logs deviations).
 3. **One condition at a time**, 10 s drain + idle probe between conditions.
 4. Report TTFT and decode separately; never average them into one number.
 5. Publish raw JSONL + env capture; do not publish derived numbers without
@@ -88,8 +89,8 @@ guidance: KLD over the full vocabulary on an **evaluation** corpus that is
 
 ```bash
 python3 scripts/snapshot_market.py     # before
-python3 -m harness.bench.toolcall_eval --endpoint http://127.0.0.1:8080/v1 \
-    --model MODEL --episodes 30        # after `make test` passes on the box
+python3 scripts/run_toolcall.py --endpoint http://127.0.0.1:8080/v1 \
+    --model MODEL --tag <tag> --episodes 30   # after `make test` passes
 python3 scripts/snapshot_market.py     # after (drift audit)
 ```
 
@@ -98,7 +99,8 @@ Grading happens offline after the fact from the recorded episode truth
 
 ## 6. What to publish back
 
-- `results/raw/run-*.jsonl`, `results/raw/market-*.json`, `env-*.json`
+- `results/raw/toolcall-*.jsonl` (episodes+grades), `results/raw/run-*.jsonl`
+  (timing), `results/raw/market-*.json`, `env-*.json`
 - the exact container digests / git SHAs used
 - a sentence per condition: warm-up compliance, CV flag, errors
 

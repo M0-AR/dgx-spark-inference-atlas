@@ -14,11 +14,14 @@ kit (`docs/SPARK_KIT.md`).
 ```bash
 # 1) container floor (builds a small CPU image; runs all self-tests)
 docker compose -f docker/docker-compose.yml run --rm smoke      # ~2 min
-#    Expected: "13 passed", then results/raw/env-<utc>.json written.
+#    Expected: "19 passed" — or "18 passed, 1 skipped" when the container
+#    has no network (the live-data grader skips cleanly) — then
+#    results/raw/env-<utc>.json written.
 
 # 2) inspect the live-data graders actually fetching real prices
 python3 -m pytest harness/tests/test_toolcall_eval.py -q        # network needed
-#    Expected: pass; graders compare against live Kraken/Frankfurter values.
+#    Expected: pass with network; skipped (never failed) without it. Graders
+#    compare against live Kraken/Frankfurter values.
 
 # 3) regenerate every README number from committed artifacts
 python3 scripts/sync_readme.py && git diff --stat README.md
@@ -29,8 +32,13 @@ python3 scripts/sync_readme.py && git diff --stat README.md
 ## A.3 Claims supported by this artifact
 
 - Statistics harness correctness: `harness/tests/test_stats.py` (known-value
-  tests for McNemar exact, chi-square survival, bootstrap determinism,
+  tests for McNemar exact, the McNemar MDE planning formula, chi-square
+  survival values, bootstrap determinism and seed sensitivity, Friedman,
   changepoint behaviour).
+- Runner protocol correctness (offline): `harness/tests/test_runner.py`
+  exercises `run_condition` end-to-end against a local mock SSE server —
+  wave batching (incl. partial final batch), TTFT/total-latency semantics
+  for non-streaming endpoints, warm-up bookkeeping.
 - Live-data verification policy: `docs/VERIFICATION.md`, exercised by the
   test suite and by mock-episode plumbing runs.
 - Protocol implementation (warm-up, isolation gate, energy meter, repair

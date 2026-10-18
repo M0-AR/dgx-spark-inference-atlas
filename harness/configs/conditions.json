@@ -16,7 +16,7 @@
     {"tag": "e30-a", "stack": "exllamav3", "bpw": 3.0, "calibration": "agentic"}
   ],
   "protocol": {
-    "warmup": ">=100 requests or >=10000 output tokens, drained",
+    "warmup": ">=100 requests and >=10000 output tokens (both), drained",
     "repetitions": 5,
     "requests_per_rep": 8,
     "max_tokens": 256,

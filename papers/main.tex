@@ -34,9 +34,9 @@ external data. This atlas contributes a pre-registered measurement protocol
 with (i) live-data-grounded tool-calling evaluation, (ii) isolation-controlled
 timing and NVML energy accounting, and (iii) an executable replication kit
 for DGX Spark hardware. On the locally executable arm we measure an EXL3
-bit-width ladder \atlasMcNemarFamily{} comparisons against an unquantized
+bit-width ladder with \atlasMcNemarFamily{} comparisons against an unquantized
 reference; headline C\_outcome at 4\,bpw is \atlasCoutE40{} (95\% CI
-\atlasCoutCiLoE40--\atlasCoutCiHiE40) versus \atlasCoutFPXX{} for FP16, with
+\atlasCoutCiLoE40--\atlasCoutCiHiE40) versus \atlasCoutFP16{} for FP16, with
 \atlasChangepoints{} detected changepoint(s) on the ladder
 ($\alpha=0.01$). External Spark claims are catalogued and quarantined
 rather than repeated.
@@ -91,7 +91,7 @@ Table placeholders follow; the committed markdown tables in
 \toprule
 Condition & C\_outcome & 95\% CI \\
 \midrule
-FP16 & \atlasCoutFPXX & \atlasCoutCiLoFPXX--\atlasCoutCiHiFPXX \\
+FP16 & \atlasCoutFP16 & \atlasCoutCiLoFP16--\atlasCoutCiHiFP16 \\
 EXL3 4\,bpw & \atlasCoutE40 & \atlasCoutCiLoE40--\atlasCoutCiHiE40 \\
 EXL3 3\,bpw & \atlasCoutE30 & \atlasCoutCiLoE30--\atlasCoutCiHiE30 \\
 EXL3 2\,bpw & \atlasCoutE20 & \atlasCoutCiLoE20--\atlasCoutCiHiE20 \\

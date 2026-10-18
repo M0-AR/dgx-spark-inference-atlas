@@ -44,6 +44,10 @@ def main() -> None:
     ap.add_argument("--seed-base", type=int, default=0)
     ap.add_argument("--api-key", default="local")
     args = ap.parse_args()
+    if args.episodes < 1:
+        ap.error("--episodes must be >= 1 (the aggregate divides by it)")
+    if args.max_turns < 1:
+        ap.error("--max-turns must be >= 1")
 
     tag_run = f"{args.tag}-{_utc()}"
     raw_path = REPO / "results" / "raw" / f"toolcall-{tag_run}.jsonl"

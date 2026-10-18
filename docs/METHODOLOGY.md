@@ -3,7 +3,7 @@
 **Status:** PRE-REGISTERED 2026-10-18, before any model experiment in this repo
 was executed. All hypotheses, conditions, tolerances and analysis choices below
 were fixed before data collection. Deviations are recorded in
-`results/README.md` (Deviations log) when they occur, never silently patched.
+`README.md` §8 (Deviations log) when they occur, never silently patched.
 
 **Study title (working):** *The DGX Spark Inference Atlas: quantized serving of
 agentic workloads — degradation patterns, energy, and reproducibility on GB10
@@ -86,11 +86,13 @@ until any party runs this kit; we do not merge them into measured tables.
 
 ## 4. Measurement protocol
 
-1. **Warm-up (mandatory).** Per condition: ≥100 requests or ≥10k output
-   tokens of drained pre-runs before the measured window; violation is
-   recorded as `WARMUP DEVIATION` in the condition notes (IETF
-   draft-gaikwad-llm-benchmarking-methodology-01 requires warm-up and
-   probe-stability verification <10%).
+1. **Warm-up (mandatory).** Per condition: ≥100 requests **and** ≥10k output
+   tokens of drained pre-runs before the measured window (both floors — the
+   IETF draft-gaikwad-llm-benchmarking-methodology-01 §4.5.1 policy of
+   "100 requests or 10,000 output tokens, whichever is greater" is satisfied
+   conservatively; the runner's loop exits only when both are met);
+   violation is recorded as `WARMUP DEVIATION` in the condition notes (IETF
+   also requires probe-stability verification <10%).
 2. **Sequential isolation.** One condition at a time; no concurrent
    conditions; a 10s drain + idle-latency probe separates conditions
    (arXiv:2610.09778: isolation cut timing CV from 15.2% to 2.2%).
@@ -99,11 +101,18 @@ until any party runs this kit; we do not merge them into measured tables.
    256 tokens, temperature 0, seed recorded per request.
 4. **Timing.** Streaming responses; TTFT = first content delta; decode rate
    = output_tokens / (total − TTFT). p50/p90/p99 + CV recorded per condition
-   from per-request records (raw JSONL is committed).
+   from per-request records (raw JSONL is committed). If an endpoint does not
+   stream content deltas, TTFT is unobservable: it is recorded equal to total
+   latency, the row is marked `ttft_is_total`, and such rows are excluded from
+   decode-throughput statistics (reported in the condition notes).
 5. **Energy.** NVML `nvmlDeviceGetTotalEnergyConsumption` (mJ) read at
-   condition boundaries; joules/token derived; idle probe captured before each
-   condition (Watt Counts arXiv:2604.09048 protocol; see STATISTICS.md for
-   known NVML caveats and our fallbacks).
+   condition boundaries — the window is opened in the meter's constructor and
+   closed in its exit; joules/token is derived from the actual measured
+   output-token count. An idle-power probe (model resident, not generating)
+   is captured before each condition, and the idle-subtracted net
+   joules/token is reported alongside the gross value; net values are never
+   clamped negative (ML.ENERGY best practice; Watt Counts arXiv:2604.09048
+   protocol; see STATISTICS.md for known NVML caveats and our fallbacks).
 6. **Live-data integrity.** Every tool-calling episode executes against live
    Kraken/Frankfurter endpoints at episode time; the served values are
    recorded as the episode's truth. Harness snapshots are taken before and
@@ -111,8 +120,10 @@ until any party runs this kit; we do not merge them into measured tables.
    (BTC fields), ±0.1% (EUR/USD) — see `docs/VERIFICATION.md`.
 7. **Grading.** Deterministic-first (Tool-Veritas, arXiv:2607.02577):
    C_tool / C_task / C_outcome cells as implemented in
-   `harness/bench/toolcall_eval.py`; repair-needed outputs never count as
-   clean outcomes; grader unit tests run in CI and against live data.
+   `harness/bench/toolcall_eval.py` (C_outcome = C_tool AND C_task AND no
+   repair needed); repair-needed outputs never count as clean outcomes;
+   grader unit tests run via `make test` (the live-data test skips cleanly
+   when offline) and against live data whenever network is available.
 
 ## 5. Analysis plan (fixed)
 
@@ -139,18 +150,22 @@ until any party runs this kit; we do not merge them into measured tables.
 
 ## 6. Statistical power notes
 
-With N=30 paired episodes per condition, McNemar detects an accuracy
-degradation of ≈ (z₀.₀₂₅+z₀.₈)·√(2/30) ≈ 0.31 in discordance-share terms at
-α=0.05, power 0.8 — i.e., this study can *detect* large agentic collapses,
-and for smaller effects we report CIs and say "not resolved at this N".
-This limitation is stated in the README; no claim of "no degradation" below
-that resolution is made without TOST at the declared margin.
+With N=30 paired episodes per condition, the normal-approximation minimum
+detectable effect for McNemar's test is δ ≈ (z₁₋α/₂+z₁₋β)·√(π_d/N), where
+π_d is the discordance share (Connor 1987; Stata `power pairedproportions`).
+Worst case π_d=1 gives δ ≈ 0.51; a typical π_d≈1/3 gives δ ≈ 0.30 — i.e.,
+this study can *detect* large agentic collapses, and for smaller effects we
+report CIs and say "not resolved at this N". The implementation lives in
+`stats.minimum_detectable_degradation_mcnemar` and is unit-tested against
+this planning formula. This limitation is stated in the README; no claim of
+"no degradation" below that resolution is made without TOST at the declared
+margin.
 
 ## 7. Deviations and honesty rules
 
 1. Any deviation (warm-up shortfall, missing NVML, failed build, stalled
    endpoint) is recorded in the condition notes and summarized in
-   `results/README.md`.
+   `README.md` §8.
 2. No number appears in the README that is not derivable from a committed
    artifact (enforced by `scripts/sync_readme.py`, which fills the
    machine-generated table blocks).

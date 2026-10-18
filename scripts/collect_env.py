@@ -27,6 +27,25 @@ def sh(cmd: list[str], timeout: float = 20.0) -> str:
         return f"<unavailable: {exc}>"
 
 
+def _memory_info() -> str:
+    """RAM totals via free(1), falling back to /proc/meminfo when free is
+    missing (slim containers, e.g. the docker smoke image)."""
+    out = sh(["free", "-b"])
+    if not out.startswith("<unavailable"):
+        return out
+    try:
+        info: dict[str, str] = {}
+        for line in Path("/proc/meminfo").read_text().splitlines():
+            key, _, rest = line.partition(":")
+            info[key.strip()] = rest.strip().split()[0] if rest.strip() else "?"
+        return (f"<free unavailable; /proc/meminfo: "
+                f"MemTotal={info.get('MemTotal', '?')}kB "
+                f"MemFree={info.get('MemFree', '?')}kB "
+                f"MemAvailable={info.get('MemAvailable', '?')}kB>")
+    except OSError as exc:
+        return f"<unavailable: {out}; /proc/meminfo: {exc}>"
+
+
 def digest_tree(root: Path) -> dict[str, str]:
     digests: dict[str, str] = {}
     for path in sorted(root.rglob("*")):
@@ -52,7 +71,7 @@ def main() -> None:
                            if l.startswith("model name")), "unknown"),
             "logical_cores": sh(["nproc"]),
         },
-        "memory": sh(["free", "-b"]),
+        "memory": _memory_info(),
         "gpu": sh(["nvidia-smi",
                    "--query-gpu=index,name,driver_version,memory.total,"
                    "compute_cap,power.limit,power.max_limit",

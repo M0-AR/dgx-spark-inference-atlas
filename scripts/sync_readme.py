@@ -39,8 +39,38 @@ from harness.bench import stats as S  # noqa: E402
 RESULTS = REPO / "results"
 TABLES = RESULTS / "derived" / "tables"
 REFERENCE_TAG = "fp16"          # paired comparisons are always vs this condition
-BPW = {"fp16": 16.0, "e40": 4.0, "e30": 3.0, "e20": 2.0, "e30-w": 3.0,
-       "e30-a": 3.0}
+CONDITIONS_PATH = REPO / "harness" / "configs" / "conditions.json"
+FALLBACK_BPW = {"fp16": 16.0, "e40": 4.0, "e30": 3.0, "e20": 2.0,
+                "e30-w": 3.0, "e30-a": 3.0}
+
+
+def load_conditions() -> tuple[dict[str, float], set[str]]:
+    """(bpw map, ladder tag set) from the pre-registered conditions file.
+
+    Ladder = conditions with default/null calibration (fp16 + e20/e30/e40);
+    the calibration-ablation tags (e30-w/e30-a) are excluded from the
+    changepoint scan.
+    """
+    try:
+        doc = json.loads(CONDITIONS_PATH.read_text())
+        conds = doc["conditions"]
+        bpw = {str(c["tag"]): float(c["bpw"]) for c in conds}
+        ladder = {str(c["tag"]) for c in conds
+                  if c.get("calibration") in (None, "default")}
+        if not bpw or not ladder:
+            raise ValueError("no conditions parsed")
+        return bpw, ladder
+    except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        print(f"[sync] conditions.json unreadable ({exc}); using fallback")
+        return dict(FALLBACK_BPW), set(FALLBACK_BPW)
+
+
+BPW, LADDER_TAGS = load_conditions()
+
+
+def _macrosafe(tag: str) -> str:
+    """LaTeX-safe macro suffix: alphanumerics only ('e30-w' -> 'E30W')."""
+    return re.sub(r"[^0-9A-Za-z]", "", tag).upper()
 
 
 def sha256_file(p: Path) -> str:
@@ -123,10 +153,10 @@ def build_agentic_table(agentic: dict[str, dict]) -> tuple[str, dict]:
                f"({_fmt_pct(ci['lo'])}–{_fmt_pct(ci['hi'])}) | "
                f"{_fmt_pct(agg['repair_rate'])} | {cmp_txt} |")
         rows.append((tag, row))
-        macros[f"atlasCout{tag.replace('-', '').upper()}"] = agg["C_outcome_rate"]
-        macros[f"atlasCoutCiLo{tag.replace('-', '').upper()}"] = ci["lo"]
-        macros[f"atlasCoutCiHi{tag.replace('-', '').upper()}"] = ci["hi"]
-        macros[f"atlasN{tag.replace('-', '').upper()}"] = n
+        macros[f"atlasCout{_macrosafe(tag)}"] = agg["C_outcome_rate"]
+        macros[f"atlasCoutCiLo{_macrosafe(tag)}"] = ci["lo"]
+        macros[f"atlasCoutCiHi{_macrosafe(tag)}"] = ci["hi"]
+        macros[f"atlasN{_macrosafe(tag)}"] = n
 
     holm = S.holm_bonferroni(pvals) if pvals else {}
     for tag, row in rows:
@@ -154,17 +184,20 @@ def build_timing_table(summaries: dict[str, dict]) -> tuple[str, dict]:
             lat = cond.get("latency", {})
             tok = cond.get("decode_tok_s", {})
             energy = cond.get("energy") or {}
-            jtok = energy.get("joules_per_token")
+            jnet = energy.get("joules_per_token_net")
+            jtok = jnet if jnet is not None else energy.get("joules_per_token")
             lines.append(
                 f"| {cond['condition']} | "
                 f"{'ok' if cond['warmup_compliant'] else 'DEVIATION'} | "
-                f"{lat.get('p50', float('nan')):.1f} | "
-                f"{lat.get('p90', float('nan')):.1f} | "
-                f"{tok.get('p50', float('nan')):.2f} | "
+                f"{lat.get('p50_ms', float('nan')):.1f} | "
+                f"{lat.get('p90_ms', float('nan')):.1f} | "
+                f"{tok.get('p50_ms', float('nan')):.2f} | "
                 f"{'⚠' if cond['cv_flag'] else 'ok'} | "
                 f"{'—' if jtok is None else f'{jtok:.3f}'} | "
                 f"{cond['errors']} |")
-            macros[f"atlasTok_{cond['condition'].replace('-', '_')}"] = tok.get("p50")
+            tok_p50 = tok.get("p50_ms")
+            if tok_p50 is not None:
+                macros[f"atlasTok{_macrosafe(cond['condition'])}"] = tok_p50
     return "\n".join(lines), macros
 
 
@@ -199,7 +232,8 @@ def build_provenance_table() -> tuple[str, dict]:
 
 def build_changepoint_note(agentic: dict[str, dict]) -> tuple[str, dict]:
     pts = sorted(((BPW[t], t, d["aggregate"]["C_outcome_rate"])
-                  for t, d in agentic.items() if t in BPW and not _is_mock(d)))
+                  for t, d in agentic.items()
+                  if t in LADDER_TAGS and not _is_mock(d)))
     if len(pts) < 4:
         return ("_Changepoint analysis requires ≥4 ladder points "
                 "(fp16 + 3 quantized); not yet available._", {})
@@ -246,7 +280,17 @@ def main() -> None:
     (TABLES / "provenance.md").write_text(p_table + "\n")
     (TABLES / "changepoints.md").write_text(cp_text + "\n")
 
-    macros = {**a_macros, **t_macros, **p_macros, **cp_macros}
+    # Zero defaults so papers/main.tex always compiles: every macro it may
+    # reference exists even before any data lands (empty results -> zeros).
+    zero_macros: dict[str, Any] = {
+        **{f"atlasCout{_macrosafe(t)}": 0.0 for t in BPW},
+        **{f"atlasCoutCiLo{_macrosafe(t)}": 0.0 for t in BPW},
+        **{f"atlasCoutCiHi{_macrosafe(t)}": 0.0 for t in BPW},
+        **{f"atlasN{_macrosafe(t)}": 0 for t in BPW},
+        "atlasMcNemarFamily": 0,
+        "atlasChangepoints": 0,
+    }
+    macros = {**zero_macros, **a_macros, **t_macros, **p_macros, **cp_macros}
     macro_lines = ["% Auto-generated by scripts/sync_readme.py — do not edit."]
     for k, v in sorted(macros.items()):
         if isinstance(v, float):

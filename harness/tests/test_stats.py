@@ -86,3 +86,34 @@ def test_changepoint_no_false_positive_on_noise():
 def test_cv():
     assert abs(stats.coefficient_of_variation([1, 1, 1, 1]) - 0.0) < 1e-12
     assert math.isnan(stats.coefficient_of_variation([1.0]))
+
+
+def test_mde_mcnemar_matches_planning_formula():
+    # Connors (1987): delta = (z_{1-a/2} + z_power) * sqrt(p_discordant / n)
+    assert abs(stats.minimum_detectable_degradation_mcnemar(30) - 0.5115) < 1e-3
+    assert abs(stats.minimum_detectable_degradation_mcnemar(
+        30, p_discordant=1 / 3) - 0.2953) < 1e-3
+
+
+def test_bootstrap_deterministic_given_seed():
+    x = list(np.linspace(0.0, 1.0, 50))
+    a = stats.bootstrap_ci(x, n_boot=500, seed=0)
+    b = stats.bootstrap_ci(x, n_boot=500, seed=0)
+    assert a == b  # same seed -> bit-for-bit identical
+
+
+def test_bootstrap_seed_changes_draw():
+    x = list(np.linspace(0.0, 1.0, 50))
+    a = stats.bootstrap_ci(x, n_boot=500, seed=0)
+    c = stats.bootstrap_ci(x, n_boot=500, seed=1)
+    assert c != a  # different seed -> different draws
+
+
+def test_friedman_known_value():
+    # 3 blocks of identical ranks [1,2,3]: chi2 = 6.0 exactly, df=2,
+    # p = chi2_sf(6, 2) = exp(-3)
+    m = np.array([[1.0, 2.0, 3.0]] * 3)
+    r = stats.friedman_test(m)
+    assert abs(r["chi2"] - 6.0) < 1e-12
+    assert r["df"] == 2
+    assert abs(r["p_value"] - math.exp(-3)) < 1e-12

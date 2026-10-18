@@ -16,7 +16,8 @@ Grading is deterministic-first (cf. Tool-Veritas / arXiv:2607.02577):
               moment it served the tool result (and, separately, of a fresh
               harness snapshot taken during grading).
   C_outcome : final message parses as strict JSON (no repair) with the exact
-              required keys and numeric types, and passes C_task.
+              required keys and numeric types, and passes C_tool and C_task
+              (i.e. C_outcome = C_tool AND C_task AND no repair).
 
 Repair attempts (fence stripping, brace extraction) are permitted but always
 recorded separately: `parse_ok_no_repair=False, needed_repair=True` never
@@ -271,6 +272,24 @@ def _value_ok(field_name: str, model_val: Any, truth_val: float) -> bool:
     return abs(v - truth_val) <= tol * abs(truth_val)
 
 
+def _internally_consistent(parsed: dict[str, Any]) -> bool:
+    """Cross-rate self-consistency of the model's own three numbers.
+
+    btc_eur must equal btc_usd / eur_usd within the declared btc_eur
+    tolerance, independently of any harness-served value.
+    """
+    try:
+        mu = float(parsed.get("btc_usd"))
+        me = float(parsed.get("eur_usd"))
+        mx = float(parsed.get("btc_eur"))
+    except (TypeError, ValueError):
+        return False
+    if not (mu > 0 and me > 0):
+        return False
+    cross = mu / me
+    return abs(mx - cross) <= ld.tolerance_for("btc_eur") * abs(cross)
+
+
 def grade_episode(rec: EpisodeRecord) -> dict[str, Any]:
     """Deterministic-first grading into C_tool / C_task / C_outcome cells."""
     # ---- C_tool ----
@@ -300,11 +319,18 @@ def grade_episode(rec: EpisodeRecord) -> dict[str, Any]:
                              and not isinstance(parsed.get(k), bool)
                              for k in REQUIRED_KEYS))
     value_ok: dict[str, bool] = {}
-    if schema_ok and served:
-        value_ok = {k: _value_ok(k, parsed.get(k), served[k])
-                    for k in REQUIRED_KEYS}
+    internally_consistent: bool | None = None
+    if schema_ok:
+        internally_consistent = _internally_consistent(parsed)
+        if all(k in served for k in REQUIRED_KEYS):
+            value_ok = {k: _value_ok(k, parsed.get(k), served[k])
+                        for k in REQUIRED_KEYS}
+        else:
+            # fail closed: without harness-served truth for every leg,
+            # C_task cannot be established
+            value_ok = {k: False for k in REQUIRED_KEYS}
     c_task = bool(value_ok) and all(value_ok.values())
-    c_outcome = bool(schema_ok and not needed_repair and c_task)
+    c_outcome = bool(c_tool and schema_ok and not needed_repair and c_task)
 
     return {
         "C_tool": bool(c_tool),
@@ -317,6 +343,7 @@ def grade_episode(rec: EpisodeRecord) -> dict[str, Any]:
         "needed_repair": bool(needed_repair),
         "schema_ok": schema_ok,
         "value_within_tolerance": value_ok,
+        "internally_consistent": internally_consistent,
         "served_truth": served,
         "final_content": rec.final_content,
         "turns": rec.turns,
